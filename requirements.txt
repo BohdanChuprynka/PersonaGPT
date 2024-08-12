@@ -2,4 +2,5 @@ python-dotenv
 telethon 
 pandas
 numpy
-pytorch
+torch
+openai
