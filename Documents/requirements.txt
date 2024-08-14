@@ -1,6 +1,6 @@
-python-dotenv
-telethon 
-pandas
-numpy
-torch
-openai
+      python-dotenv
+      telethon 
+      pandas
+      numpy
+      torch
+      openai
