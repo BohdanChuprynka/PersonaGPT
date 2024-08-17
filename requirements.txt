@@ -1,6 +1,0 @@
-python-dotenv
-telethon 
-pandas
-numpy
-torch
-openai
