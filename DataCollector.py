@@ -20,9 +20,11 @@ def optimize_messages(messages):
       # TODO: If the same user repeatedly sends messages ending with question marks or messages at the start of the day, those are likely contexts.
        
 
-import parsers.telegram_parse as telegram_parse
+import parsers.telegram.telegram_parse as telegram_parse
 import asyncio
-async def main(): 
+async def main(telegram: bool = True, 
+               instagram: bool = False,
+               discord: bool = False): 
       print("Started")
       await telegram_parse.main()
 

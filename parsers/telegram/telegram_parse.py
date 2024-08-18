@@ -3,6 +3,7 @@ from telethon import TelegramClient
 from telethon.tl.functions.messages import GetHistoryRequest
 from telethon.tl.types import User, PeerUser
 from telethon.errors import FloodWaitError
+import pandas as pd
 import asyncio
 import time 
 import openai
@@ -17,7 +18,6 @@ load_dotenv(dotenv_path=dotenv_path)
 api_id = os.getenv('TELEGRAM_API_ID')
 api_hash = os.getenv('TELEGRAM_HASH_ID')
 phone_number = os.getenv('PHONE_NUMBER')
-my_telegram_id = os.getenv('my_telegram_id')
 session_name = "telegram_parser"
 client = TelegramClient(session_name, api_id, api_hash)
 
@@ -31,7 +31,6 @@ async def extract_message_info(messages):
                   sender = message.from_id if message.from_id else (await client.get_entity(message.peer_id)).id
                   sender = sender.user_id if isinstance(sender, PeerUser) else sender # Deletes PeerUser classes and keeps only int id
 
-                  #sent_by_me = my_telegram_id == sender   
                   date = message.date 
             except FloodWaitError as e:
                   print(f"FloodWaitError: sleeping for {e.seconds} seconds.")
@@ -51,15 +50,11 @@ async def extract_message_info(messages):
       
       return extracted_dialog
 
-
-
-import pandas as pd
-
 async def parse_data(threshold: int =50, 
                      message_limit=None,
-                      dialogs_limit: int = 100,
-                      verbose=1,
-                      checkpoints: bool = True):
+                     dialogs_limit: int = 100,
+                     verbose=1,
+                     checkpoints: bool = True):
     """
     Parses all the messages in the profile.
     
@@ -76,18 +71,15 @@ async def parse_data(threshold: int =50,
             Whether to process chats with most messages first.
 
     Returns:
-        pd.DataFrame
-            The parsed data.
+        pd.DataFrame:
+            prepared DataFrame with columns ["Message", "Sender", "Date"]
     """
     async with client:
-        # TODO: Implement checkpoint system
-            # Don't forget about assigning filtered_dialogs
-            # You can implement in this structure: filtered_dialogs, itered_dialogs.
-
-
         dialogs = await client.get_dialogs()
         dialogs = [dialog for dialog in dialogs if isinstance(dialog.entity, User)]
         dialogs = [dialog for dialog in dialogs if not dialog.entity.bot]
+        my_telegram_id = int((await client.get_me()).id)
+        dialogs = [dialog for dialog in dialogs if dialog.entity.id != my_telegram_id]
         dialogs = dialogs[:dialogs_limit]
         filtered_dialogs = pd.DataFrame(columns=["Message", "Sender","Date"])
 
@@ -128,27 +120,26 @@ async def parse_data(threshold: int =50,
         
         return filtered_dialogs
     
-async def main():
-    if os.path.exists(f"parsers\{session_name}.session-journal"):
+async def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkpoints: bool = True):
+    if os.path.exists(f"parsers/telegram/{session_name}.session-journal"):
         print(f"Session {session_name} exists. Please delete it and restart the script. Or change the session name in the script.")
         sys.exit()
     else:
         await client.start(phone_number)
         print(f"Connecting with {client.session}")
-        data = await parse_data(message_limit=100, dialogs_limit=10, verbose=1, checkpoints=True)
+        data = await parse_data(message_limit=message_limit, dialogs_limit=dialogs_limit, verbose=verbose, checkpoints=checkpoints)
         data = pd.DataFrame(data, columns=["Message", "Sender", "Date"])
+        my_telegram_id = (await client.get_me()).id
         data["Sent_by_me"] = int(my_telegram_id) == data["Sender"]
         return data
         client.disconnect()
 
-        if os.path.exists("parsers/full_telegram_data.csv"):
+        if os.path.exists(r"parsers/telegram/full_telegram_data.csv"):
             print("File with the same name already exists. Do you want to overwrite it? (y/n)")
             if input() == "y":
                   data.to_csv(r'full_telegram_data.csv', index=False)
             else:
                   print("File not overwritten.")
                   sys.close()
-        print("DONE")
+        print("TELEGRAM: DONE")
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
