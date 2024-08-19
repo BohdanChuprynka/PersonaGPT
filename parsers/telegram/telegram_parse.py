@@ -97,7 +97,7 @@ async def parse_data(threshold: int =50,
                 print(f"Resuming from checkpoint. Dialogs left: {len(dialogs)}.")
 
         # Main loop of the function
-        for dialog in dialogs[:dialogs_limit]:
+        for dialog in dialogs[:dialogs_limit]:  
             start_time = time.time() if verbose else None
             messages_info = []
             async for message in client.iter_messages(dialog.entity, limit=message_limit, wait_time=10):
