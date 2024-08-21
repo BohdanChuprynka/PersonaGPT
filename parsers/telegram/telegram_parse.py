@@ -120,14 +120,14 @@ async def parse_data(threshold: int =50,
         
         return filtered_dialogs
     
-async def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkpoints: bool = True):
+async def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkpoints: bool = True, threshold: int = 50):
     if os.path.exists(f"parsers/telegram/{session_name}.session-journal"):
         print(f"Session {session_name} exists. Please delete it and restart the script. Or change the session name in the script.")
         sys.exit()
     else:
         await client.start(phone_number)
         print(f"Connecting with {client.session}")
-        data = await parse_data(message_limit=message_limit, dialogs_limit=dialogs_limit, verbose=verbose, checkpoints=checkpoints)
+        data = await parse_data(message_limit=message_limit, dialogs_limit=dialogs_limit, verbose=verbose, checkpoints=checkpoints, threshold=threshold)
         data = pd.DataFrame(data, columns=["Message", "Sender", "Date"])
         my_telegram_id = (await client.get_me()).id
         data["Sent_by_me"] = int(my_telegram_id) == data["Sender"]
