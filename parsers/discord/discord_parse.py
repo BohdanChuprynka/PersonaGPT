@@ -33,11 +33,13 @@ def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkp
       
       try: 
             data = pd.DataFrame(data, columns=['Message', 'Date'])
+            print("Discord: DONE")
             return data
       except Exception as e:
             print(f"Fixing exception: {e}")
             data = [row for row in data if row is not None]
             data = pd.DataFrame(data, columns=['Message', 'Date'])
+            print("Discord: DONE")
             return data
       
 if __name__ == "__main__":

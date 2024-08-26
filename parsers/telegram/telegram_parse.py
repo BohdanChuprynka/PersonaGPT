@@ -1,24 +1,11 @@
-# Python file specifically for DataCollector.py. '
-from telethon import TelegramClient
-from telethon.tl.functions.messages import GetHistoryRequest
-from telethon.tl.types import User, PeerUser
-from telethon.errors import FloodWaitError
-import pandas as pd
-import asyncio
-import time 
-import openai
 from dotenv import load_dotenv
-import json
-import os
-import sys
-
 dotenv_path = ".env"
 load_dotenv(dotenv_path=dotenv_path)
 
 api_id = os.getenv('TELEGRAM_API_ID')
 api_hash = os.getenv('TELEGRAM_HASH_ID')
 phone_number = os.getenv('PHONE_NUMBER')
-session_name = "telegram_parser"
+session_name = str(os.getenv('SESSION_NAME'))
 client = TelegramClient(session_name, api_id, api_hash)
 
 async def extract_message_info(messages):
@@ -50,7 +37,8 @@ async def extract_message_info(messages):
       
       return extracted_dialog
 
-async def parse_data(threshold: int =50, 
+async def parse_data(parse_type,
+                     threshold: int =50, 
                      message_limit=None,
                      dialogs_limit: int = 100,
                      verbose=1,
@@ -140,6 +128,19 @@ async def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, 
                   data.to_csv(r'full_telegram_data.csv', index=False)
             else:
                   print("File not overwritten.")
-                  sys.close()
         print("TELEGRAM: DONE")
 
+if __name__ == "__main__":
+    from telethon import TelegramClient
+    from telethon.tl.functions.messages import GetHistoryRequest
+    from telethon.tl.types import User, PeerUser
+    from telethon.errors import FloodWaitError
+    import pandas as pd
+    import asyncio
+    import time 
+    import openai
+    import json
+    import os
+    import sys
+
+    asyncio.run(main())

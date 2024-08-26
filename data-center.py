@@ -1,20 +1,26 @@
-import openai
-import pandas as pd
+from telethon.tl.functions.messages import GetHistoryRequest
+from telethon.tl.types import User, PeerUser
+from telethon.errors import FloodWaitError
+from telethon import TelegramClient
+from dotenv import load_dotenv 
+
 import parsers.telegram.telegram_parse as telegram_parse
 import parsers.discord.discord_parse as discord_parse
 import parsers.instagram.instagram_parse as instagram_parse
+import pandas as pd
+import numpy as np 
 import asyncio
 import os 
 import json 
-import numpy as np 
-import pandas as pd
-from dotenv import load_dotenv 
+import time 
+import openai
 
 env_path = 'PersonaGPT/.env' 
 load_dotenv(dotenv_path=env_path)
 
 
 telegram: bool = True                                 # Whether parse telegram data
+telegram_type = "locally"                             # "locally or globally" # Whether parse your messages through JSON Files that located locally (Fast way) or globally: (Via API) (takes 1 hour for ~20k messages)
 # Requires openai for question generation
 instagram: bool = False                               # Whether parse instagram data
 inbox_path = "parsers/instagram/your_instagram_activity/messages/inbox"  # Path to your instagram inbox
@@ -78,7 +84,7 @@ async def main(telegram = telegram,
                **kwargs): 
       
       if telegram:
-            telegram_df = await telegram_parse.main(**kwargs)
+            telegram_df = await telegram_parse.main(parse_type=telegram_type,**kwargs,)
       if instagram:
             instagram_df = instagram_parse.main(inbox_path=inbox_path, instagram_username=instagram_username, **kwargs)
       if discord:
