@@ -2,7 +2,33 @@ import openai
 import pandas as pd
 import parsers.telegram.telegram_parse as telegram_parse
 import parsers.discord.discord_parse as discord_parse
+import parsers.instagram.instagram_parse as instagram_parse
 import asyncio
+import os 
+import json 
+import numpy as np 
+import pandas as pd
+from dotenv import load_dotenv 
+
+env_path = 'PersonaGPT/.env' 
+load_dotenv(dotenv_path=env_path)
+
+
+telegram: bool = True                                 # Whether parse telegram data
+# Requires openai for question generation
+instagram: bool = False                               # Whether parse instagram data
+inbox_path = "parsers/instagram/your_instagram_activity/messages/inbox"  # Path to your instagram inbox
+instagram_username = os.getenv('INSTAGRAM_USERNAME')                 # Your instagram username
+# Requires openai for question generation
+discord: bool = False                                 # Whether parse discord data
+discord_package_folder = "parsers/discord/package"    # Root folder that contains all the dialogs (Originally named "package")
+
+message_limit: int = None                             # The maximum amount of messages to be processed total
+dialogs_limit: int = None                             # The maximum amount of dialogs to be processed
+verbose=1                                             # The amount of output to be printed
+checkpoints: bool = True                              # To save data during parsing
+threshold: int = 50                                   # Drop the dialog if it has less or equal messages than the threshold
+
 
 def optimize_messages(messages):
       """
@@ -44,29 +70,19 @@ def generate_context(response): # GPT Required
       
       return response.choices[0].text.strip()
 
-
-telegram: bool = True                                 # Whether parse telegram data
-# Requires openai for question generation
-instagram: bool = False                               # Whether parse instagram data
-# Requires openai for question generation
-discord: bool = False                                 # Whether parse discord data
-discord_package_folder = "parsers/discord/package"    # Root folder that contains all the dialogs (Originally named "package")
-message_limit: int = None                             # The maximum amount of messages to be processed total
-dialogs_limit: int = None                             # The maximum amount of dialogs to be processed
-verbose=1                                             # The amount of output to be printed
-checkpoints: bool = True                              # To save data during parsing
-threshold: int = 50                                   # Drop the dialog if it has less or equal messages than the threshold
-
-async def main(telegram=telegram,
-               instagram=instagram,
-               discord=discord,
-               discord_path=discord_package_folder,
+async def main(telegram = telegram,
+               instagram = instagram,
+               discord = discord,
+               discord_path = discord_package_folder,
+               instagram_path = inbox_path,
                **kwargs): 
       
-
-      #await telegram_parse.main(**kwargs)
-      data = discord_parse.main(**kwargs, path=discord_path)
-      print(data)
+      if telegram:
+            telegram_df = await telegram_parse.main(**kwargs)
+      if instagram:
+            instagram_df = instagram_parse.main(inbox_path=inbox_path, instagram_username=instagram_username, **kwargs)
+      if discord:
+            discord_df = discord_parse.main(path=discord_path, **kwargs)
 
 if __name__ == "__main__": 
 

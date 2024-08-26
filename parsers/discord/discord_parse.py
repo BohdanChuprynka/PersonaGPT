@@ -1,7 +1,3 @@
-import json 
-import os
-import numpy as np
-import pandas as pd
 
 # Function to extract information from messages.json
 def extract_message_info(json_file_path, message_limit: int = None):
@@ -15,7 +11,7 @@ def extract_message_info(json_file_path, message_limit: int = None):
 
 def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkpoints: bool = True, threshold: int = 50, path: str = None):
       if not os.path.exists(path):
-            print(f"Directory '{path}' does not exist.")
+            print(f"Discord Directory '{path}' does not exist.")
             exit()
 
       data = []
@@ -43,3 +39,11 @@ def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkp
             data = [row for row in data if row is not None]
             data = pd.DataFrame(data, columns=['Message', 'Date'])
             return data
+      
+if __name__ == "__main__":
+      import json 
+      import os
+      import numpy as np
+      import pandas as pd
+      
+      main()
