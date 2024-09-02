@@ -157,9 +157,12 @@ cython_debug/
 # My .gitignore
 TODO.txt 
 .DS_Store
-parsers/parsers\full_telegram_data.csv
-parsers/instagram
-parsers/discord
+parsers/discord/package
+parsers/instagram/your_instagram_activity
+parsers/instagram/instagram.csv
+parsers/discord/discord_data.csv
+parsers/telegram/result.json
+parsers/telegram/result.csv
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
