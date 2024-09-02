@@ -36,7 +36,7 @@ def extract_dialog(json_file_path, message_limit: int = None, dialogs_limit: int
             return extracted_dialog
 
 
-def main(inbox_path: str, instagram_username: str, message_limit: int = None, dialogs_limit: int = None, verbose=1, threshold: int = 50):
+def main(inbox_path: str, instagram_username: str, save_csv: bool = True, message_limit: int = None, dialogs_limit: int = None, verbose=1, threshold: int = 50):
       if not os.path.exists(inbox_path):
                   raise Exception(f"Directory '{inbox_path}' for instagram folder wasn't found.\nTry to change the path to your_instagram_activity -> messages -> inbox.")
 
@@ -66,6 +66,19 @@ def main(inbox_path: str, instagram_username: str, message_limit: int = None, di
                   break
             
       df["Sent_by_me"] = df["Sender"] == str(instagram_username)
+      
+      if save_csv:
+            if os.path.exists("parsers/instagram/instagram.csv"):
+                  print("Instagram Csv file already exists. Do you want to overwrite it? (y/n)")
+                  if input() == "y":
+                        df.to_csv(r'parsers/instagram/instagram.csv', index=False)
+                        print("Instagram: File overwritten.")
+                  else:
+                        print("File not overwritten.")
+            else: 
+                  df.to_csv(r'parsers/instagram/instagram.csv', index=False)
+
+
       print("Instagram: DONE")
       return df
 
