@@ -1,4 +1,3 @@
-
 # Function to extract information from messages.json
 def extract_message_info(json_file_path, message_limit: int = None):
     with open(json_file_path, 'r', encoding='utf-8') as file:
@@ -9,7 +8,7 @@ def extract_message_info(json_file_path, message_limit: int = None):
             return [content, timestamp]
         
 
-def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkpoints: bool = True, threshold: int = 50, path: str = None):
+def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkpoints: bool = True, threshold: int = 50, path: str = None, save_csv: bool = True):
       if not os.path.exists(path):
             print(f"Discord Directory '{path}' does not exist.")
             exit()
@@ -33,19 +32,31 @@ def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkp
       
       try: 
             data = pd.DataFrame(data, columns=['Message', 'Date'])
-            print("Discord: DONE")
-            return data
       except Exception as e:
             print(f"Fixing exception: {e}")
             data = [row for row in data if row is not None]
             data = pd.DataFrame(data, columns=['Message', 'Date'])
-            print("Discord: DONE")
-            return data
+      
+      if save_csv:
+            if os.path.exists(r"parsers/discord/discord_data.csv"):
+                  print("File with the same name already exists. Do you want to overwrite it? (y/n)")
+                  if input() == "y":
+                        print("File overwritten.")
+                        data.to_csv(r'parsers/discord/discord_data.csv', index=False)
+                  else:
+                        print("File not overwritten.")
+            else: 
+                  data.to_csv(r'parsers/discord/discord_data.csv', index=False)
+                  print("File created.")
+                  
+      print("Discord: DONE ")
+      return data 
       
 if __name__ == "__main__":
       import json 
       import os
       import numpy as np
       import pandas as pd
-      
-      main()
+
+      path = "parsers/discord/package/messages"
+      main(path=path, save_csv=True)
