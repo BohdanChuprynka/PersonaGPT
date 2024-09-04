@@ -1,3 +1,9 @@
+import json 
+import os
+import numpy as np
+import pandas as pd
+from dotenv import load_dotenv
+
 def decode_utf8(encoded_str):
       # Decoding the string
       try: 
@@ -36,7 +42,13 @@ def extract_dialog(json_file_path, message_limit: int = None, dialogs_limit: int
             return extracted_dialog
 
 
-def main(inbox_path: str, instagram_username: str, save_csv: bool = True, message_limit: int = None, dialogs_limit: int = None, verbose=1, threshold: int = 50):
+def main(inbox_path: str, instagram_username: str, **kwargs):
+      verbose = kwargs.get("verbose")
+      save_csv = kwargs.get("save_csv")
+      message_limit = kwargs.get("message_limit")
+      dialogs_limit = kwargs.get("dialogs_limit")
+      threshold = kwargs.get("threshold")
+
       if not os.path.exists(inbox_path):
                   raise Exception(f"Directory '{inbox_path}' for instagram folder wasn't found.\nTry to change the path to your_instagram_activity -> messages -> inbox.")
 
@@ -69,8 +81,7 @@ def main(inbox_path: str, instagram_username: str, save_csv: bool = True, messag
       
       if save_csv:
             if os.path.exists("parsers/instagram/instagram.csv"):
-                  print("Instagram Csv file already exists. Do you want to overwrite it? (y/n)")
-                  if input() == "y":
+                  if input("Instagram: File with the same name already exists. Do you want to overwrite it? (y/n)") == "y":
                         df.to_csv(r'parsers/instagram/instagram.csv', index=False)
                         print("Instagram: File overwritten.")
                   else:
@@ -84,11 +95,22 @@ def main(inbox_path: str, instagram_username: str, save_csv: bool = True, messag
 
 
 if __name__ == "__main__":
-      import json 
-      import os
-      import numpy as np
-      import pandas as pd
-      from dotenv import load_dotenv
+      # Parameters
+      message_limit: int = None                             # The maximum amount of messages to be processed total
+      dialogs_limit: int = None                             # The maximum amount of dialogs to be processed
+      verbose=1                                             # The amount of output to be printed
+      checkpoints: bool = True                              # To save data during parsing
+      threshold: int = 50                                   # Drop the dialog if it has less or equal messages than the threshold
+      save_csv: bool = True         
+
+      kwargs = {
+            "save_csv": save_csv,
+            "message_limit": message_limit,
+            "dialogs_limit": dialogs_limit,
+            "verbose": verbose,
+            "checkpoints": checkpoints,
+            "threshold": threshold
+      }
 
       env_path = 'PersonaGPT/.env'
       load_dotenv(dotenv_path=env_path)

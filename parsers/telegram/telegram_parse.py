@@ -219,7 +219,6 @@ async def main(parse_type: str, save_path: str, json_path = None,**kwargs):
                 client.disconnect()
     else: 
         raise ValueError("Invalid parse_type. Use 'local' or 'global'.")
-    
 
     # All other code 
     my_telegram_id = os.getenv('TELEGRAM_ID')
@@ -228,14 +227,15 @@ async def main(parse_type: str, save_path: str, json_path = None,**kwargs):
 
     if save_csv:
         if os.path.exists(save_csv):
-            print("File with the same name already exists. Do you want to overwrite it? (y/n)")
-            if input("y/n") == "y":
+            print("")
+            if input("Telegram: File with the same name already exists. Do you want to overwrite it? (y/n)") == "y":
                 data.to_csv(save_path, index=False)
             else:
                 print("File not overwritten.")
         else: 
             data.to_csv("PersonaGPT/parsers/telegram/full_telegram_data.csv", index=False)
         print("TELEGRAM: DONE")
+        
     return data
 
 if __name__ == "__main__":

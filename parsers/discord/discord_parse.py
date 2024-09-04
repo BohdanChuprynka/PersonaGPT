@@ -1,3 +1,10 @@
+import json 
+import os
+import numpy as np
+import pandas as pd
+import os
+
+
 # Function to extract information from messages.json
 def extract_message_info(json_file_path, message_limit: int = None):
     with open(json_file_path, 'r', encoding='utf-8') as file:
@@ -8,7 +15,11 @@ def extract_message_info(json_file_path, message_limit: int = None):
             return [content, timestamp]
         
 
-def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkpoints: bool = True, threshold: int = 50, path: str = None, save_csv: bool = True):
+def main(path: str = None, save_csv: bool = True, **kwargs):
+      message_limit = kwargs.get("message_limit")
+      dialogs_limit = kwargs.get("dialogs_limit")
+      verbose = kwargs.get("verbose")
+
       if not os.path.exists(path):
             print(f"Discord Directory '{path}' does not exist.")
             exit()
@@ -53,10 +64,21 @@ def main(message_limit: int = None, dialogs_limit: int = None, verbose=1, checkp
       return data 
       
 if __name__ == "__main__":
-      import json 
-      import os
-      import numpy as np
-      import pandas as pd
+      message_limit: int = None                             # The maximum amount of messages to be processed total
+      dialogs_limit: int = None                             # The maximum amount of dialogs to be processed
+      verbose=1                                             # The amount of output to be printed
+      checkpoints: bool = True                              # To save data during parsing
+      threshold: int = 50                                   # Drop the dialog if it has less or equal messages than the threshold
+      save_csv: bool = True         
+      path = "parsers/discord/package/messages"                 
 
-      path = "parsers/discord/package/messages"
+      kwargs = {
+            "save_csv": save_csv,
+            "message_limit": message_limit,
+            "dialogs_limit": dialogs_limit,
+            "verbose": verbose,
+            "checkpoints": checkpoints,
+            "threshold": threshold
+      }
+
       main(path=path, save_csv=True)
