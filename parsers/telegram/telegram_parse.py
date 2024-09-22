@@ -38,6 +38,7 @@ async def global_extract_dialog_info(messages):
                   await asyncio.sleep(e.seconds)
                   continue 
                   
+            # Connects the messages into full sentence even if the conversation is interrupted
             if text:
                   if last_message and sender == last_message[1]:
                         last_message[0] = " ".join([last_message[0], text])
