@@ -50,21 +50,21 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
       threshold = kwargs.get("threshold")
 
       if not os.path.exists(inbox_path):
-                  raise Exception(f"Directory '{inbox_path}' for instagram folder wasn't found.\nTry to change the path to your_instagram_activity -> messages -> inbox.")
+                  raise Exception(f"Directory '{inbox_path}' for instagram folder wasn't found.\n Try to change the path to your_instagram_activity -> messages -> inbox.")
 
 
       df = pd.DataFrame(columns=['Message', 'Sender', 'Date'])   
-      dialogs_path = []
+      dialogs_paths = []
 
       for root, dirs, files in os.walk(inbox_path):
             for file in files:
                   if file == 'message_1.json':
                         json_file_path = os.path.join(root, file)
-                        dialogs_path.append(json_file_path) 
+                        dialogs_paths.append(json_file_path) 
 
       if verbose: 
-            print(f"Instagram Data is processing. Total dialogs: {len(dialogs_path)}")
-      for path in dialogs_path[:dialogs_limit]:
+            print(f"Instagram Data is processing. Total dialogs: {len(dialogs_paths)}")
+      for path in dialogs_paths[:dialogs_limit]:
             
             data = extract_dialog(json_file_path=path, 
                                   message_limit=message_limit,
@@ -80,14 +80,18 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
       df["Sent_by_me"] = df["Sender"] == str(instagram_username)
       
       if save_csv:
-            if os.path.exists("parsers/instagram/instagram.csv"):
+            folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Datasets'))
+            save_path = os.path.join(folder_path, 'instagram_data')
+            print("truuuuuue")
+            print(f"Saving data to {save_path}")
+            if os.path.exists(save_path):
                   if input("Instagram: File with the same name already exists. Do you want to overwrite it? (y/n)") == "y":
-                        df.to_csv(r'parsers/instagram/instagram.csv', index=False)
+                        df.to_csv(save_path, index=False)
                         print("Instagram: File overwritten.")
                   else:
                         print("File not overwritten.")
             else: 
-                  df.to_csv(r'parsers/instagram/instagram.csv', index=False)
+                  df.to_csv(save_path, index=False)
 
 
       print("Instagram: DONE")
@@ -117,4 +121,4 @@ if __name__ == "__main__":
       inbox_path = str(os.getenv('INBOX_PATH'))
       instagram_username = os.getenv('INSTAGRAM_USERNAME')
 
-      main(inbox_path=inbox_path, instagram_username=instagram_username)
+      main(inbox_path=inbox_path, instagram_username=instagram_username, **kwargs)

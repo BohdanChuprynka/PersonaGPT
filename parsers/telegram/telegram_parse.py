@@ -227,14 +227,16 @@ async def main(parse_type: str, save_path: str, json_path = None,**kwargs):
     data["Sent_by_me"] = data["Sender"] == my_telegram_id
 
     if save_csv:
-        if os.path.exists(save_csv):
+        folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Datasets'))
+        save_path = os.path.join(folder_path, 'telegram_data.csv')
+        if os.path.exists(save_path):
             print("")
             if input("Telegram: File with the same name already exists. Do you want to overwrite it? (y/n)") == "y":
                 data.to_csv(save_path, index=False)
             else:
                 print("File not overwritten.")
         else: 
-            data.to_csv("PersonaGPT/parsers/telegram/full_telegram_data.csv", index=False)
+            data.to_csv(save_path, index=False)
         print("TELEGRAM: DONE")
         
     return data
@@ -246,8 +248,8 @@ if __name__ == "__main__":
     checkpoints: bool = True                              # To save data during parsing
     threshold: int = 50      
     save_csv: bool = True                                 # Drop the dialog if it has less or equal messages than the threshold
-    json_path = "/Users/bohdan/Documents/Programming/Projects/VSCode/AI-DataScience/PersonaGPT/parsers/telegram/result.json"
-    save_path = r"/Users/bohdan/Documents/Programming/Projects/VSCode/AI-DataScience/PersonaGPT/parsers/telegram/result.csv"
+    json_path = os.getenv('JSON_PATH')
+    save_path = os.getenv('SAVE_PATH')
 
     kwargs = {
         "save_csv": save_csv,

@@ -3,7 +3,10 @@ import os
 import numpy as np
 import pandas as pd
 import os
+from dotenv import load_dotenv
 
+env_path = "PersonaGPT/.env"
+load_dotenv(dotenv_path=env_path)
 
 # Function to extract information from messages.json
 def extract_message_info(json_file_path, message_limit: int = None):
@@ -49,28 +52,31 @@ def main(path: str = None, save_csv: bool = True, **kwargs):
             data = pd.DataFrame(data, columns=['Message', 'Date'])
       
       if save_csv:
-            if os.path.exists(r"parsers/discord/discord_data.csv"):
+            folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Datasets'))
+            save_path = os.path.join(folder_path, 'discord_data.csv')
+            if os.path.exists(save_path):
                   print("File with the same name already exists. Do you want to overwrite it? (y/n)")
                   if input() == "y":
+                        data.to_csv(save_path, index=False)
                         print("File overwritten.")
-                        data.to_csv(r'parsers/discord/discord_data.csv', index=False)
                   else:
                         print("File not overwritten.")
             else: 
-                  data.to_csv(r'parsers/discord/discord_data.csv', index=False)
+                  data.to_csv(save_path, index=False)
                   print("File created.")
                   
       print("Discord: DONE ")
       return data 
       
 if __name__ == "__main__":
+      
       message_limit: int = None                             # The maximum amount of messages to be processed total
       dialogs_limit: int = None                             # The maximum amount of dialogs to be processed
       verbose=1                                             # The amount of output to be printed
       checkpoints: bool = True                              # To save data during parsing
       threshold: int = 50                                   # Drop the dialog if it has less or equal messages than the threshold
       save_csv: bool = True         
-      path = "parsers/discord/package/messages"                 
+      path = str(os.getenv('DISCORD_PATH'))
 
       kwargs = {
             "save_csv": save_csv,
