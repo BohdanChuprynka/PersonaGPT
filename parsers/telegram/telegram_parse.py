@@ -41,6 +41,10 @@ async def global_extract_dialog_info(messages):
             # Connects the messages into full sentence even if the conversation is interrupted
             if text:
                   if last_message and sender == last_message[1]:
+                        if last_message[0][-1] not in [".", "!", "?"]:
+                            last_message[0] = last_message[0] + ","
+                        
+                        text = text[0].lower() + text[1:]
                         last_message[0] = " ".join([last_message[0], text])
                   else:
                         if last_message:
@@ -66,15 +70,20 @@ def local_extract_dialog_info(messages):
                   date = message["date"]
 
             except Exception as e:
-                  print(f"Exception: {e}")                  
+                  print(f"Exception: {e}")  
+                                 
             if text:
                   if last_message and sender == last_message[1]:
+                        if last_message[0][-1] not in [".", "!", "?"]:
+                            last_message[0] = last_message[0] + ","
+                        
+                        text = text[0].lower() + text[1:]
                         last_message[0] = " ".join([last_message[0], text])
                   else:
                         if last_message:
                               extracted_dialog.append(last_message)
                         last_message = [text, sender, date]
-
+                    
       if last_message:
             extracted_dialog.append(last_message)
       
@@ -249,6 +258,7 @@ if __name__ == "__main__":
     threshold: int = 50      
     save_csv: bool = True                                 # Drop the dialog if it has less or equal messages than the threshold
     json_path = os.getenv('JSON_PATH')
+    print(f"JSON Path: {json_path}")
     save_path = os.getenv('SAVE_PATH')
 
     kwargs = {
