@@ -32,7 +32,10 @@ def extract_dialog(json_file_path, message_limit: int = None, dialogs_limit: int
                   
                   if message:
                         if last_message and sender == last_message[1]:
-                              last_message[0] = last_message[0].lower()
+                              if last_message[0][-1] not in [".", "!", "?"]:
+                                    last_message[0] = last_message[0] + ","
+                              
+                              message = message[0].lower() + message[1:]
                               last_message[0] = " ".join([last_message[0], message])
                         else:
                               if last_message:
@@ -81,8 +84,7 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
       
       if save_csv:
             folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Datasets'))
-            save_path = os.path.join(folder_path, 'instagram_data')
-            print("truuuuuue")
+            save_path = os.path.join(folder_path, 'instagram_data.csv')
             print(f"Saving data to {save_path}")
             if os.path.exists(save_path):
                   if input("Instagram: File with the same name already exists. Do you want to overwrite it? (y/n)") == "y":
