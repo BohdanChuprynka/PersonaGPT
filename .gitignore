@@ -168,9 +168,10 @@ parsers/telegram/result.csv
 Datasets/
 *.csv
 *.pkt
-.session
+telegram_parser.session
 
-
+[filter "jupyternotebook"]
+      clean = "jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to notebook --stdout %f"
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
