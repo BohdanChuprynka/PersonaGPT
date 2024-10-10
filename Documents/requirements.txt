@@ -5,3 +5,4 @@ numpy
 torch
 openai
 nltk
+transformers 
