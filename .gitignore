@@ -169,6 +169,7 @@ Datasets/
 *.csv
 *.pkt
 telegram_parser.session
+Models/
 
 [filter "jupyternotebook"]
       clean = "jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to notebook --stdout %f"
