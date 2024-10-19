@@ -5,8 +5,6 @@ numpy
 torch
 openai
 nltk
-transformers 
 googletrans==3.1.0a0
 gensim
-nlpaug
-kaggle
+tqdm
