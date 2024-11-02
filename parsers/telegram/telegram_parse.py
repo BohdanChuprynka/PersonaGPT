@@ -5,7 +5,6 @@ from telethon.errors import FloodWaitError
 import pandas as pd
 import asyncio
 import time 
-import openai
 import json
 import os
 import sys

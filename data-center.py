@@ -38,48 +38,7 @@ verbose=1                                             # The amount of output to 
 checkpoints: bool = True                              # To save data during parsing
 threshold: int = 50      
 save_csv: bool = True                                 # Drop the dialog if it has less or equal messages than the threshold
-
-
-def optimize_messages(messages):
-      """
-      Function which uses a set of tuning algorithms to meet the criteria of optimized data for future models.
-      """
-
-      # TODO: Include only messages in ukrainian language
-
-
-      # TODO: Put todos below in order of priority 
-      # For each of the points below, if true: add one, if false: minus one
-      # TODO: Add detection system for context and response:
-
-      # TODO: If the message contains question mark in the end of the message, it is a context
-      # TODO: The first message of the new day is probably a context.
-      # TODO: If there are few messages in a row from user, concatenate them into one message.
-      # TODO: If there is a significant time gap (e.g., several hours) between messages, the first message after the gap might be a context.
-      # TODO: Look for specific keywords or phrases that typically indicate a context (e.g., "What do you think about...", "Can you explain...", "Why is...").
-      # TODO: If a message is a direct reply to a previous context message, it is likely a response.
-      # TODO: Short messages that directly follow a context are likely responses.
-      # TODO: If the same user repeatedly sends messages ending with question marks or messages at the start of the day, those are likely contexts.
        
-def generate_context(response): # GPT Required 
-      """
-      Uses AI to generate context based on response
-      """ 
-      #openai.api_key = os.getenv('OPENAI_API_KEY')
-
-      prompt = f'Classify the following message as either "context" or "response":\n\n"{message}"\n\nAnswer with one word only.'
-      
-      response = openai.Completion.create(
-            engine="GPT-4",  # Choose a suitable engine
-            prompt=prompt,
-            max_tokens=10,
-            n=1,
-            stop=None,
-            temperature=0.5,
-      )
-      
-      return response.choices[0].text.strip()
-
 async def main(telegram = telegram,
                instagram = instagram,
                discord = discord,
