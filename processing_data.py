@@ -345,7 +345,7 @@ def structure_dataset(df: pd.DataFrame) -> pd.DataFrame:
                         continue
                   
                   # If there was a group chat, and two other people except me had a conversation
-                  elif dataframe.loc[idx-1, "Sent_by_me"] == False:
+                  elif idx != 0 and dataframe.loc[idx-1, "Sent_by_me"] == False:
                         dataframe, total_sins = fix_row(dataframe, idx-1, total_sins)
 
                   
@@ -718,9 +718,6 @@ def augment_data(df: pd.DataFrame,
 
         df_augmented = pd.concat([df_augmented, loop_dataset], axis=0).reset_index(drop=True)
 
-        # For notebook
-        #folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Datasets')) 
-        #save_path = os.path.join(folder_path, 'instagram_data.csv')
         if not save_path:
             save_path = "Datasets/dataset"
             df_augmented.to_csv(save_path, index=False)

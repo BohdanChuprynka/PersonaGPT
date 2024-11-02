@@ -165,11 +165,11 @@ parsers/discord/discord_data.csv
 parsers/telegram/result.json
 parsers/telegram/result.csv
 /Users/bohdan/Documents/Programming/Projects/VSCode/AI-DataScience/PersonaGPT/full_telegram_data.csv
-Datasets/
+Datasets/*
 *.csv
 *.pkt
 telegram_parser.session
-Models/
+Models/*
 data_chunks/*
 
 [filter "jupyternotebook"]
