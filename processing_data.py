@@ -1,22 +1,8 @@
+from config import processing_parameters
+from config import processing_kwargs as kwargs
+
 import numpy as np
 import pandas as pd
-import os
-import time
-from tqdm import tqdm
-import random
-
-import requests
-from dotenv import load_dotenv
-env_path = "PersonaGPT/.env"
-load_dotenv(dotenv_path=env_path)
-
-import re
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-import string
-from functools import cache
-
 from googletrans import Translator
 import gensim.downloader as api
 import nlpaug.augmenter.char as nac
@@ -24,39 +10,59 @@ import nlpaug.augmenter.word as naw
 import nlpaug.augmenter.sentence as nas
 import nlpaug.flow as naf
 import psutil
-
+import re
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+import string
+from functools import cache
 from nlpaug.util import Action
+from functools import partial
+
+import os
+import time
+from tqdm import tqdm
+import random
 
 # Global Variables
 import multiprocess as mp              # NOT multiprocessing to avoid __main__ improtable problem by the children 
-from functools import partial
+import requests
+from dotenv import load_dotenv
+env_path = "PersonaGPT/.env"
+load_dotenv(dotenv_path=env_path)
 
-all_nicknames: list = os.getenv("NICKNAMES").split(",")   # List of all nicknames (comma separated
-chunks_path = "data_chunks"            # Path to the folder that contains the data chunks
-censor_word: str = "CENSORED"          # The word that will be places instead of filtered sensitive word in filter_sensitive_words function.
-context_size: int = 20                 # The amount of previous messages to include in the context column (20 by default)
-num_chunks: int = 32                   # Number of chunks to split the dataset into (32 by default)
-dataset_language: str = "uk"           # The native language of the dataset
-back_translation_language: str = "en"  # The language to be translated to and back from (en by default)
-probs = [0.1, 0.3, 0.3, 0.3]           # 0.1 for back-translation, 0.3 for shuffle, 0.3 for pop, 0.3 for swap. Lowered probabilities for back-translation because of low-resources
-bool_synonym: bool = True              # Whether to perform synonym replacement together with back translation
-synonym_percentage: int = 0.7          # The amount of words to replace (70% default)
-random_augmentation: bool = True       # Whether to use random augmentation function on each sentence or not. (True by default)
-kwargs: dict = {
-    "augmentation_factor": 5,          # How many times to augment each question. (2 by default)
-    "random_augmentation": True,       # Whether to use random augmentation or not. (True by default)
-    "samples": None}                   # How much rows to process. (None by default)
+# Initialize parameters from config.py
+if processing_parameters:
+    locals().update(processing_parameters)
+else:
+    Warning("Custom data cleaning parameters are not used. Setting up default parameters.")
+    root_directory = os.path.dirname(os.getcwd())
+    glove_path = os.path.join(root_directory, "Models/glove.6B.100d.txt") # Synonym replacement model
+    chunks_path = os.path.join(root_directory, "data_chunks")             # Path to the folder that contains the data chunks
 
-# Parallel processing
-num_workers: int = mp.cpu_count()-2    # Parallel Computing: amount of cores to use in parallel computing 
-memory_threshold: float = 2            # Memory to leave available during augmentation. (2 by default) 
-swap_processing: bool = True           # Swap memory in the process of augmentation. (True by default). Efficient in RAM. Instead of storing the whole dataset in RAM, it will swap it with disk.
-delay: int = 10                        # Seconds to wait before continuing augmentation if memory_threshold is reached. (5 by default)
-init_time: int = 5                     # Augmentation wrapper: Optimized in memory way of initializing the workers. Each workers will initialize for init_time after first worker. (5 default)
+    censor_word: str = "CENSORED"          # The word that will be places instead of filtered sensitive word in filter_sensitive_words function.
+    context_size: int = 20                 # The amount of previous messages to include in the context column (20 by default)
+    num_chunks: int = 32                   # Number of chunks to split the dataset into (32 by default)
+    dataset_language: str = "uk"           # The native language of the dataset
+    back_translation_language: str = "en"  # The language to be translated to and back from (en by default)
+    probs = [0.1, 0.3, 0.3, 0.3]           # 0.1 for back-translation, 0.3 for shuffle, 0.3 for pop, 0.3 for swap. Lowered probabilities for back-translation because of low-resources
+    bool_synonym: bool = True              # Whether to perform synonym replacement together with back translation
+    synonym_percentage: int = 0.7          # The amount of words to replace (70% default)
+    random_augmentation: bool = True       # Whether to use random augmentation function on each sentence or not. (True by default)
+    kwargs: dict = {
+        "augmentation_factor": 5,          # How many times to augment each question. (2 by default)
+        "random_augmentation": True,       # Whether to use random augmentation or not. (True by default)
+        "samples": None}                   # How much rows to process. (None by default)
+
+    # Parallel processing
+    num_workers: int = mp.cpu_count()-2    # Parallel Computing: amount of cores to use in parallel computing 
+    memory_threshold: float = 2            # Memory to leave available during augmentation. (2 by default) 
+    swap_processing: bool = True           # Swap memory in the process of augmentation. (True by default). Efficient in RAM. Instead of storing the whole dataset in RAM, it will swap it with disk.
+    delay: int = 10                        # Seconds to wait before continuing augmentation if memory_threshold is reached. (5 by default)
+    init_time: int = 5                     # Augmentation wrapper: Optimized in memory way of initializing the workers. Each workers will initialize for init_time after first worker. (5 default)
 
 keys_to_filter = os.getenv('KEYS_TO_FILTER').split(',')  # list of sensitive words
 concatenated_path = "Datasets/concatenated.csv"           
-dataset_path = "Datasets/concatenated.csv"               # Path to the folder that contains the data chunks
 english_topwords = set(stopwords.words('english'))       # English stopwords
 
 LANG_CODES = {
@@ -357,27 +363,28 @@ def structure_dataset(df: pd.DataFrame) -> pd.DataFrame:
       print(f"Total run time: {time.time() - start_time:.2f}. Total sins {total_sins}")
       return dataframe
 
-""" Tester for function above to work properly. Raises exception otherwise """
+""" Tester for 'structure_dataset' function above to work properly. Raises exception otherwise """
 def check_structure(df: pd.DataFrame) -> pd.DataFrame:
       even_rows = df.iloc[::2]
       odd_rows = df.iloc[1::2]
       
       # Identify rows that do not meet the criteria
-      sin_even_rows = even_rows[even_rows['Sent_by_me'] != True]
-      sin_odd_rows = odd_rows[odd_rows['Sent_by_me'] != False]
+      sin_even_rows = even_rows[even_rows['Sent_by_me'] != False]
+      sin_odd_rows = odd_rows[odd_rows['Sent_by_me'] != True]
       
       # Check if there are any sins
       if sin_even_rows.empty and sin_odd_rows.empty:
-            print("All even rows are True, and all odd rows are False.")
+            print("All even rows are True, and all odd rows are False. Continuing processing allowed.")
 
       else:
             print("There are rows that don't meet the criteria:")
             if not sin_even_rows.empty:
                   print("Even rows that aren't True:")
+                  print(sin_even_rows)
                   
-                  return False 
             if not sin_odd_rows.empty:
                   print("Odd rows that aren't False:")
+                  print(sin_odd_rows)
 
             raise Exception("Check_structure: There are rows that don't meet the criteria.")
                   
@@ -539,7 +546,7 @@ def pop_word(sentence, word_swap: bool = False):
 
 # TODO: Add auto model download
 aug_glove = naw.WordEmbsAug(
-    model_type='glove', model_path='Models/glove.6B.100d.txt',
+    model_type='glove', model_path=glove_path,
     action="substitute")
 
 # TODO: Check everything below
@@ -781,24 +788,31 @@ def connect_chunks(chunks_folder):
     return pd.concat(chunks, axis=0) 
 
 
-dataset = pd.read_csv(dataset_path)
-dataset = pd.DataFrame(dataset)
-dataset = preprocess_dataset(dataset)
-dataset = create_time_diff_column(dataset)
-dataset = structure_dataset(dataset)
-check_structure(dataset)
+def main(df: pd.DataFrame = None , df_path: str = None) -> pd.DataFrame:
+    if not [df, df_path]:
+        raise Exception("No input data provided.")
 
-# TODO: Check for the structure again 
-dataset = separate_sentences(dataset)
-dataset = add_context(dataset)
+    if df_path: 
+        df = pd.read_csv(concatenated_path)
+    
+    df = pd.DataFrame(df)
+    df = preprocess_dataset(df)
+    df = create_time_diff_column(df)
+    df = structure_dataset(df)
+    check_structure(df)
+    df = separate_sentences(df)
+    df = add_context(df)
 
-# Augmentation section
-augmented_dataset = parallel_computing(dataset, augmentation_wrapper, num_chunks=num_chunks, sequential_initialization=True,**kwargs)
+    parallel_computing(df, augmentation_wrapper, num_chunks=num_chunks, sequential_initialization=True,**kwargs)
 
-# Finally.. save our final results
-dataset = connect_chunks(chunks_folder=chunks_path)
-dataset = dataset.sort_values(by='timestamp').reset_index(drop=True)
-dataset.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
-dataset.to_csv("Datasets/final_result.csv", index=False)
+    # Finally.. save our final results
+    df = connect_chunks(chunks_folder=chunks_path)
 
-dataset
+    df = df.sort_values(by='timestamp').reset_index(drop=True)
+    df.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
+    df.to_csv("Datasets/final_result.csv", index=False)
+
+    return df
+
+if __name__ == "__main__":
+    main()
