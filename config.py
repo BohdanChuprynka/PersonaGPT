@@ -3,7 +3,7 @@ import multiprocess as mp
 from dotenv import load_dotenv
 load_dotenv()
 
-root_directory = os.path.abspath(os.getcwd())
+root_directory = os.path.dirname(os.path.abspath(__file__))
 
 # Loading 
 loading_parameters: dict = {
@@ -58,5 +58,13 @@ processing_kwargs: dict = {
 
 # Training 
 training_parameters: dict = {
-      "Something": "to be done"
+      "DATA_PATH": os.path.join(root_directory, "Datasets/final_result.csv"),
+      "MODEL_NAME": 'gpt2-medium',  
+      "OUTPUT_DIR": os.path.join(root_directory, "Models/1.0v_PersonaGPT"),
+      "MAX_LENGTH": 256,
+      "BATCH_SIZE": 32,
+      "EPOCHS": 3,
+      "LEARNING_RATE": 5e-5,
+      "WARMUP_RATIO": 5, # after (total_steps/3) steps stop warmup
+      "SEED": 42
 }
