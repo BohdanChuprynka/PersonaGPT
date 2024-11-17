@@ -58,7 +58,8 @@ processing_kwargs: dict = {
 
 # Training 
 training_parameters: dict = {
-      "DATA_PATH": os.path.join(root_directory, "Datasets/final_result.csv"),
+      #"DATA_PATH": os.path.join(root_directory, "Datasets/final_result.csv"),
+      "DATA_PATH": os.path.join(root_directory, "Datasets/post_jailbreak.csv"),
       "OUTPUT_DIR": os.path.join(root_directory, "Models/1.0v_PersonaGPT"),
       "MODEL_NAME": 'gpt2-medium', # select for your preference  
       "train_size": 0.8,
