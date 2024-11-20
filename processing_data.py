@@ -809,6 +809,7 @@ def main(df: pd.DataFrame = None , df_path: str = None) -> pd.DataFrame:
     df = connect_chunks(chunks_folder=chunks_path)
 
     df = df.sort_values(by='timestamp').reset_index(drop=True)
+    df.drop_duplicates(columns=['question'], inplace=True)
     df.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
     df.to_csv("Datasets/final_result.csv", index=False)
 

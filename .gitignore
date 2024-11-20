@@ -171,6 +171,7 @@ Datasets/*
 telegram_parser.session
 Models/*
 data_chunks/*
+LearningFolder
 
 [filter "jupyternotebook"]
       clean = "jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to notebook --stdout %f"

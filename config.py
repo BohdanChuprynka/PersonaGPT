@@ -35,7 +35,7 @@ processing_parameters: dict = {
     "censor_word": "CENSORED",               # The word that will be places instead of filtered sensitive word in filter_sensitive_words function.
     "context_size": 20,                      # The amount of previous messages to include in the context column (20 by default)
     "num_chunks": 32,                        # Number of chunks to split the dataset into (32 by default)
-    "dataset_language": "uk",                # The native language of the dataset
+    "dataset_language": "ukr",               # The native language of the dataset
     "back_translation_language": "en",       # The language to be translated to and back from (en by default)
     "probs": [0.1, 0.3, 0.3, 0.3],           # 0.1 for back-translation, 0.3 for shuffle, 0.3 for pop, 0.3 for swap. Lowered probabilities for back-translation because of low-resources
     "bool_synonym": True,                    # Whether to perform synonym replacement together with back translation
@@ -44,7 +44,7 @@ processing_parameters: dict = {
 
     # Parallel processing
     "num_workers": mp.cpu_count()-2,         # Parallel Computing: amount of cores to use in parallel computing 
-    "memory_threshold": 2,                   # Memory to leave available during augmentation. (2 by default) 
+    "memory_threshold": 2,                   # Memory (gb) to leave available during augmentation. (2 by default) 
     "swap_processing": True,                 # Swap memory in the process of augmentation. (True by default). Efficient in RAM. Instead of storing the whole dataset in RAM, it will swap it with disk.
     "delay": 10,                             # Seconds to wait before continuing augmentation if memory_threshold is reached. (5 by default)
     "init_time": 5,                          # Augmentation wrapper: Optimized in memory way of initializing the workers. Each workers will initialize for init_time after first worker. (5 default)
@@ -60,13 +60,29 @@ processing_kwargs: dict = {
 training_parameters: dict = {
       #"DATA_PATH": os.path.join(root_directory, "Datasets/final_result.csv"),
       "DATA_PATH": os.path.join(root_directory, "Datasets/post_jailbreak.csv"),
-      "OUTPUT_DIR": os.path.join(root_directory, "Models/1.0v_PersonaGPT"),
       "MODEL_NAME": 'gpt2-medium', # select for your preference  
-      "train_size": 0.8,
+      "TRAIN_SIZE": 0.9,
       "MAX_LENGTH": 256,
       "BATCH_SIZE": 32,
       "EPOCHS": 3,
       "LEARNING_RATE": 5e-5,
-      "WARMUP_RATIO": 5,          # after (total_steps/3) steps stop warmup 
-      "SEED": 42
+      "WARMUP_STEPS": 500,          # after (total_steps/3) steps stop warmup 
+      "SEED": 42,
+      "dataset_language": "uk", 
+
+      # Training !
+      "OUTPUT_DIR": os.path.join(root_directory, "Models/1.1v_PersonaGPT"),
+      "MAX_LENGTH": 128,           # Maximum length of the generated answer
+      "NUM_BEAMS": 5,              # Beam search for better results
+      "NUM_TRAIN_EPOCHS": 3,
+      "PER_DEVICE_TRAIN_BATCH_SIZE": 8,
+      "PER_DEVICE_EVAL_BATCH_SIZE": 8,
+      "EVAL_STEPS": 2,
+      "SAVE_STEPS": 1000,
+      "WARMUP_STEPS": 500,
+      "EVALUATION_STRATEGY": 'steps',
+      "LOGGING_DIR": 'Models/logs',
+      "LOGGING_STEPS": 100,
+      "SAVE_TOTAL_LIMIT": 2,
+      "FP16": True,
 }

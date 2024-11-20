@@ -8,3 +8,5 @@ nltk
 googletrans==3.1.0a0
 gensim
 tqdm
+datasets 
+transformers
