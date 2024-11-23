@@ -1,0 +1,71 @@
+
+loading_parameters:
+  t_local_json_path: 'parsers/telegram/result.json'  # If t_parse_type is "local", then fill it
+  t_global_save_path: 'parsers/telegram/result.csv'  # If t_parse_type is "global", then fill it
+  inbox_path: 'parsers/instagram/your_instagram_activity/messages/inbox'  # Path to your Instagram inbox
+  discord_package_folder: 'parsers/discord/package'  # Root folder that contains all the dialogs (Originally named "package")
+  instagram_username: "os.getenv('INSTAGRAM_USERNAME')"  # Your Instagram username
+  save_path: "os.path.abspath(os.path.join(root_directory, 'Datasets/'))"  # Where to save the data
+  t_parse_type: "local"  # "local" or "global": Whether to parse your messages through local JSON files (Fast way) or globally via API (takes 1 hour for ~20k messages)
+  telegram: true         # Whether to parse Telegram data
+  instagram: true        # Whether to parse Instagram data
+  discord: false         # Whether to parse Discord data
+  checkpoints: true      # Save data during parsing
+  save_csv: false        # Drop the dialog if it has less or equal messages than the threshold
+
+  message_limit: null    # The maximum number of messages to be processed total
+  dialogs_limit: null    # The maximum number of dialogs to be processed
+  verbose: 1             # The amount of output to be printed
+  threshold: 50          # Dialogs with less than this threshold of messages will be dropped
+
+
+processing_parameters:
+  glove_path: 'Models/glove.6B.100d.txt'  # Synonym replacement model
+  chunks_path: 'data_chunks' # Path to the folder that contains the data chunks
+
+  censor_word: "CENSORED"             # The word that will be placed instead of filtered sensitive words in the filter_sensitive_words function
+  context_size: 20                    # The amount of previous messages to include in the context column (20 by default)
+  num_chunks: 32                      # Number of chunks to split the dataset into (32 by default)
+  dataset_language: "ukr"             # The native language of the dataset
+  back_translation_language: "en"     # The language to translate to and back from (en by default)
+  probs: [0.1, 0.3, 0.3, 0.3]         # Probabilities for back-translation, shuffle, pop, and swap
+  bool_synonym: true                  # Whether to perform synonym replacement together with back translation
+  synonym_percentage: 0.7             # The percentage of words to replace with synonyms (70% default)
+  random_augmentation: true           # Whether to use random augmentation on each sentence (True by default)
+
+  # Parallel processing
+  num_workers: "mp.cpu_count()-2"     # Number of cores to use in parallel computing
+  memory_threshold: 2                 # Memory (GB) to leave available during augmentation (2 by default)
+  swap_processing: true               # Swap memory during augmentation (True by default)
+  delay: 10                           # Seconds to wait before continuing augmentation if memory_threshold is reached (10 by default)
+  init_time: 5                        # Initialization time for workers (5 by default)
+
+processing_kwargs:
+  augmentation_factor: 5              # How many times to augment each question (5 by default)
+  random_augmentation: true           # Whether to use random augmentation or not (True by default)
+  samples: null                       # Number of rows to process (None/All by default)
+
+
+training_parameters:
+  DATA_PATH: "Datasets/post_jailbreak.csv"
+  TRAIN_PATH: "Datasets/train_data.csv"
+  VAL_PATH: "Datasets/val_data.csv"
+  MODEL_NAME: ""
+  OUTPUT_DIR: "Models/1.1v_PersonaGPT"
+  TRAIN_SIZE: 0.9
+  MAX_SEQ_LENGTH: 256
+  NUM_TRAIN_EPOCHS: 3
+  PER_DEVICE_TRAIN_BATCH_SIZE: 8
+  PER_DEVICE_EVAL_BATCH_SIZE: 8
+  LEARNING_RATE: 5e-5
+  WARMUP_STEPS: 500
+  SEED: 42
+  FP16: true
+  EVALUATION_STRATEGY: "steps"
+  EVAL_STEPS: 500
+  SAVE_STEPS: 1000
+  LOGGING_STEPS: 100
+  SAVE_TOTAL_LIMIT: 2
+  MAX_LENGTH: 128
+  NUM_BEAMS: 5
+  dataset_language: "uk"
