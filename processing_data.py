@@ -787,8 +787,14 @@ def connect_chunks(chunks_folder):
       chunks.append(chunk)
     return pd.concat(chunks, axis=0) 
 
+def split_data(df, train_size = 0.9):
+    train_size = int(len(df) * train_size)
+    train_data = df.iloc[:train_size]
+    test_data = df.iloc[train_size:]
+    return train_data, test_data
 
-def main(df: pd.DataFrame = None , df_path: str = None) -> pd.DataFrame:
+
+def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9) -> pd.DataFrame:
     if not [df, df_path]:
         raise Exception("No input data provided.")
 
@@ -809,11 +815,18 @@ def main(df: pd.DataFrame = None , df_path: str = None) -> pd.DataFrame:
     df = connect_chunks(chunks_folder=chunks_path)
 
     df = df.sort_values(by='timestamp').reset_index(drop=True)
-    df.drop_duplicates(columns=['question'], inplace=True)
+    df.drop_duplicates(subset=['question'], inplace=True)
     df.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
-    df.to_csv("Datasets/final_result.csv", index=False)
+
+    if train_size:
+        train_data, test_data = split_data(df, train_size)
+        train_data.to_csv("Datasets/train_data.csv", index=False)
+        test_data.to_csv("Datasets/test_data.csv", index=False)
+    else:
+        df.to_csv("Datasets/final_result.csv", index=False)
 
     return df
+    
 
 if __name__ == "__main__":
     main()
