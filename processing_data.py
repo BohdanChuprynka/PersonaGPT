@@ -1,6 +1,3 @@
-from config import processing_parameters
-from config import processing_kwargs as kwargs
-
 import numpy as np
 import pandas as pd
 from googletrans import Translator
@@ -23,6 +20,7 @@ import os
 import time
 from tqdm import tqdm
 import random
+import yaml
 
 # Global Variables
 import multiprocess as mp              # NOT multiprocessing to avoid __main__ improtable problem by the children 
@@ -31,35 +29,43 @@ from dotenv import load_dotenv
 env_path = "PersonaGPT/.env"
 load_dotenv(dotenv_path=env_path)
 
-# Initialize parameters from config.py
-if processing_parameters:
-    locals().update(processing_parameters)
-else:
-    Warning("Custom data cleaning parameters are not used. Setting up default parameters.")
-    root_directory = os.path.dirname(os.getcwd())
-    glove_path = os.path.join(root_directory, "Models/glove.6B.100d.txt") # Synonym replacement model
-    chunks_path = os.path.join(root_directory, "data_chunks")             # Path to the folder that contains the data chunks
+# All variables configuration from config.yaml file 
 
-    censor_word: str = "CENSORED"          # The word that will be places instead of filtered sensitive word in filter_sensitive_words function.
-    context_size: int = 20                 # The amount of previous messages to include in the context column (20 by default)
-    num_chunks: int = 32                   # Number of chunks to split the dataset into (32 by default)
-    dataset_language: str = "uk"           # The native language of the dataset
-    back_translation_language: str = "en"  # The language to be translated to and back from (en by default)
-    probs = [0.1, 0.3, 0.3, 0.3]           # 0.1 for back-translation, 0.3 for shuffle, 0.3 for pop, 0.3 for swap. Lowered probabilities for back-translation because of low-resources
-    bool_synonym: bool = True              # Whether to perform synonym replacement together with back translation
-    synonym_percentage: int = 0.7          # The amount of words to replace (70% default)
-    random_augmentation: bool = True       # Whether to use random augmentation function on each sentence or not. (True by default)
-    kwargs: dict = {
-        "augmentation_factor": 5,          # How many times to augment each question. (2 by default)
-        "random_augmentation": True,       # Whether to use random augmentation or not. (True by default)
-        "samples": None}                   # How much rows to process. (None by default)
+config_path = os.path.join(os.path.dirname(os.getcwd()), "config.yaml")
+with open(config_path, 'r') as f:
+    full_config = yaml.safe_load(f)
 
-    # Parallel processing
-    num_workers: int = mp.cpu_count()-2    # Parallel Computing: amount of cores to use in parallel computing 
-    memory_threshold: float = 2            # Memory to leave available during augmentation. (2 by default) 
-    swap_processing: bool = True           # Swap memory in the process of augmentation. (True by default). Efficient in RAM. Instead of storing the whole dataset in RAM, it will swap it with disk.
-    delay: int = 10                        # Seconds to wait before continuing augmentation if memory_threshold is reached. (5 by default)
-    init_time: int = 5                     # Augmentation wrapper: Optimized in memory way of initializing the workers. Each workers will initialize for init_time after first worker. (5 default)
+processing_parameters = full_config.get('processing_parameters', {})
+processing_params = full_config.get('processing_kwargs', {})
+
+
+root_path = os.path.dirname(os.getcwd())
+DATASET_PATH                  = os.path.join(root_path, processing_parameters.get("dataset_path"))
+OUTPUT_DIR                    = os.path.join(root_path, processing_parameters.get("save_path"))
+GLOVE_PATH                    = os.path.join(root_path, processing_parameters.get("glove_path"))
+CHUNKS_PATH                   = os.path.join(root_path, processing_parameters.get("chunks_path"))
+UA_STOPWORDS_PATH             = os.path.join(root_path, "Datasets/stopwords_ua_set.txt")
+
+CENSOR_WORD                   = processing_parameters.get("censor_word", "CENSORED")
+CONTEXT_SIZE                  = processing_parameters.get("context_size", 20)
+NUM_CHUNKS                    = processing_parameters.get("num_chunks", 32)
+DATASET_LANGUAGE              = processing_parameters.get("dataset_language", "en")
+BACK_TRANSLATION_LANGUAGE     = processing_parameters.get("back_translation_language", "es")
+PROBS                         = processing_parameters.get("probs", None)
+BOOL_SYNONYM                  = processing_parameters.get("bool_synonym", True)
+SYNONYM_PERCENTAGE            = processing_parameters.get("synonym_percentage", 0.7)
+RANDOM_AUGMENTATION           = processing_parameters.get("random_augmentation", True)
+NUM_WORKERS                   = processing_parameters.get("num_workers", None)
+MEMORY_THRESHOLD              = processing_parameters.get("memory_threshold", None)
+SWAP_PROCESSING               = processing_parameters.get("swap_processing", True)
+DELAY                         = processing_parameters.get("delay", 10)
+INIT_TIME                     = processing_parameters.get("init_time", 10)
+
+PROCESSING_KWARGS = {
+      "augmentation_factor":  processing_params.get("augmentation_factor", 5),
+      "random_augmentation":  processing_params.get("random_augmentation", True),      
+      "samples":              processing_params.get("samples", None),      
+}
 
 keys_to_filter = os.getenv('KEYS_TO_FILTER').split(',')  # list of sensitive words
 concatenated_path = "Datasets/concatenated.csv"           
@@ -245,7 +251,7 @@ def remove_emojis(data):
                       "]+", re.UNICODE)
     return re.sub(emoj, ' ', data)
 
-def filter_sensitive_words(sentence, replacement=censor_word, keys_to_filter=keys_to_filter):
+def filter_sensitive_words(sentence, replacement=CENSOR_WORD, keys_to_filter=keys_to_filter):
     """
     Takes a list of sensitive words and replaces sensitive for you words with 'CENSORED'
     Parameters: 
@@ -436,7 +442,7 @@ def separate_sentences(df: pd.DataFrame) -> pd.DataFrame:
 
       return separated_dataset
 
-def add_context(df: pd.DataFrame, context_size: int = context_size) -> pd.DataFrame:
+def add_context(df: pd.DataFrame, context_size: int = CONTEXT_SIZE) -> pd.DataFrame:
     """
     Add a column with previous context to the DataFrame.
     
@@ -546,7 +552,7 @@ def pop_word(sentence, word_swap: bool = False):
 
 # TODO: Add auto model download
 aug_glove = naw.WordEmbsAug(
-    model_type='glove', model_path=glove_path,
+    model_type='glove', model_path=GLOVE_PATH,
     action="substitute")
 
 # TODO: Check everything below
@@ -623,7 +629,7 @@ class google_translate:
       return word2vec_model
 
     @cache
-    def synonym_replacement(self, sentence, percentage: float = synonym_percentage): 
+    def synonym_replacement(self, sentence, percentage: float = SYNONYM_PERCENTAGE): 
         """ Replaces random non-stopword word with a synonym. 
 
         Args:
@@ -647,7 +653,7 @@ class google_translate:
                 print(f"synonym_replacement Exception: Could not replace synonym: {str(e)}")
                 return sentence        
 
-def is_memory(threshold_gb: float = memory_threshold, delay: int = delay): 
+def is_memory(threshold_gb: float = MEMORY_THRESHOLD, delay: int = DELAY): 
     """
     Pauses execution when available memory is less than threshold.
     Args:f
@@ -660,15 +666,15 @@ def is_memory(threshold_gb: float = memory_threshold, delay: int = delay):
         #print("Memory limit reached. Waiting for resources to free up...")
         time.sleep(delay)
 
-translator = google_translate(translate_from=dataset_language, translate_to=back_translation_language, replace_synonyms=bool_synonym)
+translator = google_translate(translate_from=DATASET_LANGUAGE, translate_to=BACK_TRANSLATION_LANGUAGE, replace_synonyms=BOOL_SYNONYM)
 augmentation_functions = [translator.back_translate, shuffle_sentence, pop_word, swap_word]
-def select_random_functions(functions=augmentation_functions, p=probs):  # Lowered probabilities for back-translation because of low-resources
+def select_random_functions(functions=augmentation_functions, p=PROBS):  # Lowered probabilities for back-translation because of low-resources
     """ Returns random functions in order to apply during processing"""
 
     indexes = sorted(np.random.choice(len(functions), size=random.randint(1, len(functions)), replace=False, p=p))
     return [functions[index] for index in indexes]            
 
-def apply_augmentation(sentence, random_augmentation: bool = random_augmentation) -> pd.DataFrame:
+def apply_augmentation(sentence, random_augmentation: bool = RANDOM_AUGMENTATION) -> pd.DataFrame:
     try: 
         # Check for available memory 
         is_memory()
@@ -752,11 +758,11 @@ def split_dataframe(df, chunk_size):
 
 def augmentation_wrapper(df: pd.DataFrame, save_path: str, worker_id: int = None, **kwargs):
       if worker_id: 
-         time.sleep(worker_id * init_time) 
+         time.sleep(worker_id * INIT_TIME) 
          
       return augment_data(df, save_path, **kwargs)
 
-def parallel_computing(df, func, num_partitions=num_workers, num_chunks: int = num_workers, sequential_initialization=True, **kwargs):
+def parallel_computing(df, func, num_partitions=NUM_WORKERS, num_chunks: int = NUM_WORKERS, sequential_initialization=True, **kwargs):
     df_split = np.array_split(df, num_chunks) 
     save_paths = [f"data_chunks/chunk_{i+1}" for i in range(num_chunks)] # Create save_paths for each partition
     
@@ -809,21 +815,16 @@ def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9)
     df = separate_sentences(df)
     df = add_context(df)
 
-    parallel_computing(df, augmentation_wrapper, num_chunks=num_chunks, sequential_initialization=True,**kwargs)
+    parallel_computing(df, augmentation_wrapper, num_chunks=NUM_CHUNKS, sequential_initialization=True, **PROCESSING_KWARGS)
 
     # Finally.. save our final results
-    df = connect_chunks(chunks_folder=chunks_path)
+    df = connect_chunks(chunks_folder=CHUNKS_PATH)
 
     df = df.sort_values(by='timestamp').reset_index(drop=True)
     df.drop_duplicates(subset=['question'], inplace=True)
     df.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
 
-    if train_size:
-        train_data, test_data = split_data(df, train_size)
-        train_data.to_csv("Datasets/train_data.csv", index=False)
-        test_data.to_csv("Datasets/test_data.csv", index=False)
-    else:
-        df.to_csv("Datasets/final_result.csv", index=False)
+    df.to_csv(OUTPUT_DIR, index=False)
 
     return df
     

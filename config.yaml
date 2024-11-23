@@ -20,37 +20,40 @@ loading_parameters:
 
 
 processing_parameters:
+  dataset_path: 'Datasets/concatenated.csv'
+  save_path: 'Datasets/processed_dataset.csv'
   glove_path: 'Models/glove.6B.100d.txt'  # Synonym replacement model
-  chunks_path: 'data_chunks' # Path to the folder that contains the data chunks
+  chunks_path: 'data_chunks'              # Path to the folder that contains the data chunks
+  ua_path: "Datasets/stopwords_ua_set.txt"
 
-  censor_word: "CENSORED"             # The word that will be placed instead of filtered sensitive words in the filter_sensitive_words function
-  context_size: 20                    # The amount of previous messages to include in the context column (20 by default)
-  num_chunks: 32                      # Number of chunks to split the dataset into (32 by default)
-  dataset_language: "ukr"             # The native language of the dataset
-  back_translation_language: "en"     # The language to translate to and back from (en by default)
-  probs: [0.1, 0.3, 0.3, 0.3]         # Probabilities for back-translation, shuffle, pop, and swap
-  bool_synonym: true                  # Whether to perform synonym replacement together with back translation
-  synonym_percentage: 0.7             # The percentage of words to replace with synonyms (70% default)
-  random_augmentation: true           # Whether to use random augmentation on each sentence (True by default)
+  censor_word: "CENSORED"                 # The word that will be placed instead of filtered sensitive words in the filter_sensitive_words function
+  context_size: 20                        # The amount of previous messages to include in the context column (20 by default)
+  num_chunks: 32                          # Number of chunks to split the dataset into (32 by default)
+  dataset_language: "ukr"                 # The native language of the dataset
+  back_translation_language: "en"         # The language to translate to and back from (en by default)
+  probs: [0.1, 0.3, 0.3, 0.3]             # Probabilities for back-translation, shuffle, pop, and swap
+  bool_synonym: true                      # Whether to perform synonym replacement together with back translation
+  synonym_percentage: 0.7                 # The percentage of words to replace with synonyms (70% default)
+  random_augmentation: true               # Whether to use random augmentation on each sentence (True by default)
 
-  # Parallel processing
-  num_workers: "mp.cpu_count()-2"     # Number of cores to use in parallel computing
-  memory_threshold: 2                 # Memory (GB) to leave available during augmentation (2 by default)
-  swap_processing: true               # Swap memory during augmentation (True by default)
-  delay: 10                           # Seconds to wait before continuing augmentation if memory_threshold is reached (10 by default)
-  init_time: 5                        # Initialization time for workers (5 by default)
+  # Parallel processing   
+  num_workers: "mp.cpu_count()-2"         # Number of cores to use in parallel computing
+  memory_threshold: 2                     # Memory (GB) to leave available during augmentation (2 by default)
+  swap_processing: true                   # Swap memory during augmentation (True by default)
+  delay: 10                               # Seconds to wait before continuing augmentation if memory_threshold is reached (10 by default)
+  init_time: 5                            # Initialization time for workers (5 by default)
 
-processing_kwargs:
-  augmentation_factor: 5              # How many times to augment each question (5 by default)
-  random_augmentation: true           # Whether to use random augmentation or not (True by default)
-  samples: null                       # Number of rows to process (None/All by default)
+processing_kwargs:    
+  augmentation_factor: 5                  # How many times to augment each question (5 by default)
+  random_augmentation: true               # Whether to use random augmentation or not (True by default)
+  samples: null                           # Number of rows to process (None/All by default)
 
 
 training_parameters:
   DATA_PATH: "Datasets/post_jailbreak.csv"
   TRAIN_PATH: "Datasets/train_data.csv"
   VAL_PATH: "Datasets/val_data.csv"
-  MODEL_NAME: ""
+  MODEL_NAME: "google/mt5-base"
   OUTPUT_DIR: "Models/1.1v_PersonaGPT"
   TRAIN_SIZE: 0.9
   MAX_SEQ_LENGTH: 256
