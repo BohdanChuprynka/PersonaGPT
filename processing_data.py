@@ -31,7 +31,10 @@ load_dotenv(dotenv_path=env_path)
 
 # All variables configuration from config.yaml file 
 
-config_path = os.path.join(os.path.dirname(os.getcwd()), "config.yaml")
+
+
+# <---------------------------------- VARIABLE INITIALIZATION --------------------------------------->
+config_path = os.path.join(os.getcwd(), "config.yaml")
 with open(config_path, 'r') as f:
     full_config = yaml.safe_load(f)
 
@@ -39,7 +42,7 @@ processing_parameters = full_config.get('processing_parameters', {})
 processing_params = full_config.get('processing_kwargs', {})
 
 
-root_path = os.path.dirname(os.getcwd())
+root_path = os.getcwd()
 DATASET_PATH                  = os.path.join(root_path, processing_parameters.get("dataset_path"))
 OUTPUT_DIR                    = os.path.join(root_path, processing_parameters.get("save_path"))
 GLOVE_PATH                    = os.path.join(root_path, processing_parameters.get("glove_path"))
@@ -197,6 +200,8 @@ if not os.path.exists("Datasets/stopwords_ua_set.txt"):
 
 with open('Datasets/stopwords_ua_set.txt', 'r') as file:
     ukrainian_stop_words = file.read().splitlines()[0]
+# <---------------------------------- VARIABLE INITIALIZATION --------------------------------------->
+
 
 def remove_urls(text):
       return re.sub(r'http\S+', 'redacted', text)
@@ -213,11 +218,6 @@ def remove_mention(text):
   return re.sub(mention_regex, "/mention", text)
 def redact_email(text): 
     return re.sub(r'\S+@\S+', '/email', text)
-# def remove_password(text): 
-#     copy_text = text
-#     pass_pattern = r'[A-Za-z0-9@#$%^&+=]{8,}'
-#     text_ = re.sub(pass_pattern, '', text)
-#     return text_
 def remove_whitespace(text):
     return  " ".join(text.split())
 def remove_punctuation(text):
@@ -253,16 +253,18 @@ def remove_emojis(data):
 
 def filter_sensitive_words(sentence, replacement=CENSOR_WORD, keys_to_filter=keys_to_filter):
     """
-    Takes a list of sensitive words and replaces sensitive for you words with 'CENSORED'
+    Takes a list of sensitive words and replaces them with 'CENSORED'
     Parameters: 
-        sentence 
+        sentence: str
         replacement: str = words that will be substituted instead of the sensitive words   
+    Returns:
+        modified_sentence: str
     """
-    words = set(keys_to_filter)
+    words_to_filter = set(keys_to_filter)
     sentence_words = word_tokenize(sentence)
     
     modified_sentence = [
-        replacement if word in words else word for word in sentence_words
+        replacement if word.lower() in words_to_filter else word for word in sentence_words
     ]
     
     # Join the list back into a sentence
@@ -291,7 +293,6 @@ def preprocess_data(text):
 
 """ Wrapper over preprocess_data function."""
 def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
-    import time 
     dataset_copy = df.copy()
     start_time= time.time()
     df['Message'] = df['Message'].apply(preprocess_data)
@@ -555,8 +556,6 @@ aug_glove = naw.WordEmbsAug(
     model_type='glove', model_path=GLOVE_PATH,
     action="substitute")
 
-# TODO: Check everything below
-
 class google_translate:
     """
     Performs Google Translate on a given text.
@@ -662,13 +661,12 @@ def is_memory(threshold_gb: float = MEMORY_THRESHOLD, delay: int = DELAY):
     """
     available_ram = psutil.virtual_memory().available / (1024**3)
     if available_ram <= threshold_gb:
-        print(available_ram)
-        #print("Memory limit reached. Waiting for resources to free up...")
+        print("Memory limit reached. Waiting for resources to free up...")
         time.sleep(delay)
 
 translator = google_translate(translate_from=DATASET_LANGUAGE, translate_to=BACK_TRANSLATION_LANGUAGE, replace_synonyms=BOOL_SYNONYM)
 augmentation_functions = [translator.back_translate, shuffle_sentence, pop_word, swap_word]
-def select_random_functions(functions=augmentation_functions, p=PROBS):  # Lowered probabilities for back-translation because of low-resources
+def select_random_functions(functions=augmentation_functions, p=PROBS):  # Added probs in order to lower probabilities for back-translation because of low-resources
     """ Returns random functions in order to apply during processing"""
 
     indexes = sorted(np.random.choice(len(functions), size=random.randint(1, len(functions)), replace=False, p=p))
@@ -693,12 +691,6 @@ def apply_augmentation(sentence, random_augmentation: bool = RANDOM_AUGMENTATION
         print("apply_augmentation EXCEPTION: " + str(e))
         return sentence
 
-def speed_test(df, samples: int = 100) -> None:
-    start_time = time.time()
-    df["question"] = df["question"][:samples].apply(lambda x: apply_augmentation(x))
-    print("--- %s seconds ---" % (time.time() - start_time))
-    return 
-
 def augment_data(df: pd.DataFrame, 
                 save_path: str = None,
                 augmentation_factor: int = 2, 
@@ -712,11 +704,12 @@ def augment_data(df: pd.DataFrame,
     Parameters:
         df: pd.DataFrame with "question" column
         augmentation_factor: int = 5; how many times to augment each question.
+        random_augmentation: bool = True; Every augmentation factor chooses random augmentation functions
+        swap_memory: bool = True; Swap memory between augmentations to reduce RAM usage.
         samples: int = None; How much rows to process. 
-        checkpoints: bool = True; Saves the augmentation process every iteration (augmentation_factor==1Iter)
+        
     """
     original_dataframe = df[:samples]
- 
 
     df_augmented = original_dataframe.copy()
     df_augmented = drop_space_rows(df_augmented, column="question")

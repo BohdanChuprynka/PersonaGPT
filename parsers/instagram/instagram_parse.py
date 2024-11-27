@@ -118,7 +118,7 @@ if __name__ == "__main__":
             "threshold": threshold
       }
 
-      env_path = 'PersonaGPT/.env'
+      env_path = os.path.join(os.path.dirname(os.getcwd()), '.env')
       load_dotenv(dotenv_path=env_path)
       inbox_path = str(os.getenv('INBOX_PATH'))
       instagram_username = os.getenv('INSTAGRAM_USERNAME')

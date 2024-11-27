@@ -2,18 +2,18 @@
 loading_parameters:
   t_local_json_path: 'parsers/telegram/result.json'  # If t_parse_type is "local", then fill it
   t_global_save_path: 'parsers/telegram/result.csv'  # If t_parse_type is "global", then fill it
-  inbox_path: 'parsers/instagram/your_instagram_activity/messages/inbox'  # Path to your Instagram inbox
+  inbox_path: 'parsers/instagram/your_instagram_activity 3/messages/inbox'  # Path to your Instagram inbox
   discord_package_folder: 'parsers/discord/package'  # Root folder that contains all the dialogs (Originally named "package")
   instagram_username: "os.getenv('INSTAGRAM_USERNAME')"  # Your Instagram username
   save_path: "os.path.abspath(os.path.join(root_directory, 'Datasets/'))"  # Where to save the data
   t_parse_type: "local"  # "local" or "global": Whether to parse your messages through local JSON files (Fast way) or globally via API (takes 1 hour for ~20k messages)
-  telegram: true         # Whether to parse Telegram data
+  telegram: true         # Whether to parse Telegram during data collection
   instagram: true        # Whether to parse Instagram data
   discord: false         # Whether to parse Discord data
   checkpoints: true      # Save data during parsing
   save_csv: false        # Drop the dialog if it has less or equal messages than the threshold
 
-  message_limit: null    # The maximum number of messages to be processed total
+  message_limit: null    # The maximum number of messages to be processed total (default: all)
   dialogs_limit: null    # The maximum number of dialogs to be processed
   verbose: 1             # The amount of output to be printed
   threshold: 50          # Dialogs with less than this threshold of messages will be dropped
@@ -53,10 +53,12 @@ training_parameters:
   DATA_PATH: "Datasets/post_jailbreak.csv"
   TRAIN_PATH: "Datasets/train_data.csv"
   VAL_PATH: "Datasets/val_data.csv"
-  MODEL_NAME: "google/mt5-base"
+  MODEL_VERSION: "google/mt5-base"
   OUTPUT_DIR: "Models/1.1v_PersonaGPT"
+  OVERWRITE_OUTPUT_DIR: true
   TRAIN_SIZE: 0.9
   MAX_SEQ_LENGTH: 256
+  TARGET_MAX_LENGTH: 128 
   NUM_TRAIN_EPOCHS: 3
   PER_DEVICE_TRAIN_BATCH_SIZE: 8
   PER_DEVICE_EVAL_BATCH_SIZE: 8
@@ -71,4 +73,4 @@ training_parameters:
   SAVE_TOTAL_LIMIT: 2
   MAX_LENGTH: 128
   NUM_BEAMS: 5
-  dataset_language: "uk"
+  DATASET_LANGUAGE: "uk"

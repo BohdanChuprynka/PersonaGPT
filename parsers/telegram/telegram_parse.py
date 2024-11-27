@@ -19,9 +19,8 @@ api_hash = os.getenv('TELEGRAM_HASH_ID')
 phone_number = os.getenv('PHONE_NUMBER')
 my_telegram_id = os.getenv('TELEGRAM_ID')
 session_name = str(os.getenv('SESSION_NAME'))
-client = TelegramClient(session_name, api_id, api_hash)
 
-async def global_extract_dialog_info(messages):
+async def global_extract_dialog_info(client, messages):
       extracted_dialog = []
       last_message=None
 
@@ -89,6 +88,7 @@ def local_extract_dialog_info(messages):
       return extracted_dialog
 
 async def global_parse(
+                     client: TelegramClient,
                      threshold: int =50, 
                      message_limit=None,
                      dialogs_limit: int = 100,
@@ -145,7 +145,7 @@ async def global_parse(
 
             total_messages = len(messages_info)
             if total_messages > threshold:
-                extracted_dialog = await global_extract_dialog_info(messages_info)
+                extracted_dialog = await global_extract_dialog_info(client, messages_info)
                 filtered_dialogs = pd.concat([filtered_dialogs, pd.DataFrame(extracted_dialog, columns=["Message", "Sender", "Date"])])
                 if verbose: 
                     total += 1
@@ -221,9 +221,10 @@ async def main(parse_type: str, save_path: str, json_path = None,**kwargs):
                 print(f"Session {session_name} exists. Please delete it and restart the script. Or change the session name in the script.")
                 sys.exit()
             else:
+                client = TelegramClient(session_name, api_id, api_hash)
                 await client.start(phone_number)
                 print(f"Connecting with {client.session}")
-                data = await global_parse(parse_type="local", **kwargs)
+                data = await global_parse(client=client, **kwargs)
                 my_telegram_id = (await client.get_me()).id
                 client.disconnect()
     else: 
