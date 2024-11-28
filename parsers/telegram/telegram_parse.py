@@ -182,8 +182,8 @@ def local_parse(
       def extract_messages(chat_info): 
             extracted_dialog = local_extract_dialog_info(chat_info["messages"])
             extracted_df = pd.DataFrame(extracted_dialog, columns=["Message", "Sender", "Date"])
-            extracted_df["DialogID"] = f"T_{total_processed+1}" # f"Telegram_1{i}"
             total_processed += 1
+            extracted_df["DialogID"] = f"T_{total_processed}" # f"Telegram_1{i}"
 
             if verbose:
                   if total_processed % 20 == 0:
