@@ -169,45 +169,46 @@ def local_parse(
             threshold: int=50, 
             message_limit=None,
             dialogs_limit: int=100,
-            verbose=1,
+            verbose: bool = 1,
             checkpoints: bool=True) -> pd.DataFrame:
       
       with open(json_path, "r") as f:
             data = json.load(f)
       
       # Will store message dialogs that will be processed
-      filtered_dialogs = pd.DataFrame(columns=["Message", "Sender", "Date"])
+      filtered_dialogs = pd.DataFrame(columns=["DialogID", "Message", "Sender", "Date"])
+      total_processed: int = 0
 
       def extract_messages(chat_info): 
-            nonlocal filtered_dialogs, total_processed
             extracted_dialog = local_extract_dialog_info(chat_info["messages"])
             extracted_df = pd.DataFrame(extracted_dialog, columns=["Message", "Sender", "Date"])
-            filtered_dialogs = pd.concat([filtered_dialogs, extracted_df])
+            extracted_df["DialogID"] = f"T_{total_processed+1}" # f"Telegram_1{i}"
+            total_processed += 1
 
             if verbose:
-                  total_processed += 1
                   if total_processed % 20 == 0:
                         remaining_dialogs = len(data["chats"]["list"]) - total_processed
                         print(f"TELEGRAM: Processed {total_processed} dialogs. Left: {remaining_dialogs}")
 
+            return extracted_df
       
       if verbose:
-            total_processed = 0 
             print(f"TELEGRAM: Start processing. Total dialogs: {len(data['chats']['list'])}")
 
       for chat_info in data["chats"]["list"][:dialogs_limit]:
             if chat_info["type"] == "personal_chat" and len(chat_info["messages"]) > threshold:
-                  extract_messages(chat_info)
+                extracted_dialog = extract_messages(chat_info)
+                filtered_dialogs = pd.concat([filtered_dialogs, extracted_dialog])
 
-                  if message_limit and len(filtered_dialogs) >= message_limit:
-                        break
+                if message_limit and len(filtered_dialogs) >= message_limit:
+                    break
 
       return filtered_dialogs
             
     
-async def main(parse_type: str, save_path: str, json_path = None,**kwargs):
-    save_csv = kwargs.get("save_csv")
-    del kwargs["save_csv"]
+async def main(parse_type: str, json_path = None,**kwargs):
+    save_path = kwargs.get("save_path")
+    del kwargs["save_path"]
 
     if parse_type == "local":
         if os.path.exists(json_path):
@@ -235,18 +236,16 @@ async def main(parse_type: str, save_path: str, json_path = None,**kwargs):
     data = pd.DataFrame(data, columns=["Message", "Sender", "Date"])
     data["Sent_by_me"] = data["Sender"] == my_telegram_id
 
-    if save_csv:
-        folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Datasets'))
-        save_path = os.path.join(folder_path, 'telegram_data.csv')
+    if save_path:
+        save_path = os.path.join(save_path , 'telegram_data.csv')
         if os.path.exists(save_path):
-            print("")
             if input("Telegram: File with the same name already exists. Do you want to overwrite it? (y/n)") == "y":
                 data.to_csv(save_path, index=False)
             else:
                 print("File not overwritten.")
         else: 
             data.to_csv(save_path, index=False)
-        print("TELEGRAM: DONE")
+    print("TELEGRAM: DONE")
         
     return data
 
@@ -255,14 +254,13 @@ if __name__ == "__main__":
     dialogs_limit: int = None                            # The maximum amount of dialogs to be processed
     verbose=1                                             # The amount of output to be printed
     checkpoints: bool = True                              # To save data during parsing
+    save_path = os.path.join(os.getcwd(), "Datasets")
     threshold: int = 50      
-    save_csv: bool = True                                 # Drop the dialog if it has less or equal messages than the threshold
     json_path = os.getenv('JSON_PATH')
     print(f"JSON Path: {json_path}")
-    save_path = os.getenv('SAVE_PATH')
 
     kwargs = {
-        "save_csv": save_csv,
+        "save_path": save_path,
         "message_limit": message_limit,
         "dialogs_limit": dialogs_limit,
         "verbose": verbose,
@@ -270,4 +268,4 @@ if __name__ == "__main__":
         "threshold": threshold
     }
 
-    data = asyncio.run(main(parse_type="local", json_path=json_path, save_path=save_path, **kwargs))
+    data = asyncio.run(main(parse_type="local", json_path=json_path, **kwargs))

@@ -47,16 +47,17 @@ def extract_dialog(json_file_path, message_limit: int = None, dialogs_limit: int
 
 def main(inbox_path: str, instagram_username: str, **kwargs):
       verbose = kwargs.get("verbose")
-      save_csv = kwargs.get("save_csv")
+      save_path = kwargs.get("save_path")
       message_limit = kwargs.get("message_limit")
       dialogs_limit = kwargs.get("dialogs_limit")
       threshold = kwargs.get("threshold")
+      del kwargs["save_path"]
 
       if not os.path.exists(inbox_path):
                   raise Exception(f"Directory '{inbox_path}' for instagram folder wasn't found.\n Try to change the path to your_instagram_activity -> messages -> inbox.")
 
 
-      df = pd.DataFrame(columns=['Message', 'Sender', 'Date'])   
+      df = pd.DataFrame(columns=["DialogID", 'Message', 'Sender', 'Date'])   
       dialogs_paths = []
 
       for root, dirs, files in os.walk(inbox_path):
@@ -67,7 +68,7 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
 
       if verbose: 
             print(f"Instagram Data is processing. Total dialogs: {len(dialogs_paths)}")
-      for path in dialogs_paths[:dialogs_limit]:
+      for i, path in enumerate(dialogs_paths[:dialogs_limit]):
             
             data = extract_dialog(json_file_path=path, 
                                   message_limit=message_limit,
@@ -75,6 +76,7 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
                                   verbose=1,
                                   threshold=threshold)
             data = pd.DataFrame(data, columns=['Message', 'Sender', 'Date'])
+            data["DialogID"] = f"I_{i}" # f"Instagram_{i}"
             df = pd.concat([df, data])
             
             if message_limit and len(df) >= message_limit:
@@ -82,9 +84,8 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
             
       df["Sent_by_me"] = df["Sender"] == str(instagram_username)
       
-      if save_csv:
-            folder_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Datasets'))
-            save_path = os.path.join(folder_path, 'instagram_data.csv')
+      if save_path:
+            save_path = os.path.join(save_path, 'instagram_data.csv')
             print(f"Saving data to {save_path}")
             if os.path.exists(save_path):
                   if input("Instagram: File with the same name already exists. Do you want to overwrite it? (y/n)") == "y":
