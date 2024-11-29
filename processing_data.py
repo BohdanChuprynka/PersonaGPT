@@ -25,14 +25,10 @@ import yaml
 # Global Variables
 import multiprocess as mp              # NOT multiprocessing to avoid __main__ improtable problem by the children 
 import requests
-from dotenv import load_dotenv
-env_path = "PersonaGPT/.env"
-load_dotenv(dotenv_path=env_path)
+
+
 
 # All variables configuration from config.yaml file 
-
-
-
 # <---------------------------------- VARIABLE INITIALIZATION --------------------------------------->
 config_path = os.path.join(os.getcwd(), "config.yaml")
 with open(config_path, 'r') as f:
@@ -40,6 +36,7 @@ with open(config_path, 'r') as f:
 
 processing_parameters = full_config.get('processing_parameters', {})
 processing_params = full_config.get('processing_kwargs', {})
+personal_parameters = full_config.get('personal_parameters', {})
 
 
 root_path = os.getcwd()
@@ -70,9 +67,8 @@ PROCESSING_KWARGS = {
       "samples":              processing_params.get("samples", None),      
 }
 
-keys_to_filter = os.getenv('KEYS_TO_FILTER').split(',')  # list of sensitive words
-concatenated_path = "Datasets/concatenated.csv"           
-english_topwords = set(stopwords.words('english'))       # English stopwords
+keys_to_filter =              personal_parameters.get('KEYS_TO_FILTER').split(',')
+english_topwords =            set(stopwords.words('english'))       # English stopwords
 
 LANG_CODES = {
     'afrikaans': 'af',
@@ -299,7 +295,7 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
     df["Message"] = df["Message"].apply(lambda x: remove_emojis(str(x)) if isinstance(x, str) else ' ')
     df = drop_space_rows(df)
     print(df.head(10))
-    df.to_csv(concatenated_path, index=False)
+    df.to_csv(DATASET_PATH, index=False)
     end_time = time.time()
 
     total_time = end_time - start_time
@@ -402,7 +398,8 @@ Creating a column with time difference between messages
 To correctly assign the context later in processing.
 """
 def create_time_diff_column(df: pd.DataFrame) -> pd.DataFrame:
-      df = df.sort_values(by=['Date']).reset_index(drop=True)
+      # TODO: Create a method to assign time gaps correctly
+      
 
       df['Date'] = pd.to_datetime(df['Date'], format='ISO8601')
 
@@ -552,7 +549,6 @@ def pop_word(sentence, word_swap: bool = False):
 
     return " ".join(words)
 
-# TODO: Add auto model download
 aug_glove = naw.WordEmbsAug(
     model_type='glove', model_path=GLOVE_PATH,
     action="substitute")
@@ -740,7 +736,6 @@ def augment_data(df: pd.DataFrame,
             del df_augmented
     
     # Sort the dataset for sequential data.
-    df_augmented = df_augmented.sort_values(by='timestamp').reset_index(drop=True)
     df_augmented.drop_duplicates(inplace=True)
     print("Augmentation completed.")
 
@@ -793,13 +788,34 @@ def split_data(df, train_size = 0.9):
     test_data = df.iloc[train_size:]
     return train_data, test_data
 
+def jailbreak_protection(questions: list, answers, df: pd.DataFrame) -> pd.DataFrame:
+      """
+      Creates a dataframe with jailbreak q/a to match original df. 
+      """
+
+      min_length = min(len(questions), len(answers))
+      questions = questions[:min_length]
+      answers = answers[:min_length]
+
+      random_timestamps = df["timestamp"].sample(n=min_length).reset_index(drop=True)
+      time_gaps = pd.Series(['Time Gap'] * min_length)
+
+      jailbreak_df = pd.DataFrame({
+            'question': questions[:min_length],
+            'answer': answers[:min_length],
+            'timestamp': random_timestamps,
+            'context': time_gaps
+      })
+
+      return jailbreak_df
+
 
 def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9) -> pd.DataFrame:
     if not [df, df_path]:
         raise Exception("No input data provided.")
 
     if df_path: 
-        df = pd.read_csv(concatenated_path)
+        df = pd.read_csv(DATASET_PATH)
     
     df = pd.DataFrame(df)
     df = preprocess_dataset(df)
@@ -814,7 +830,6 @@ def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9)
     # Finally.. save our final results
     df = connect_chunks(chunks_folder=CHUNKS_PATH)
 
-    df = df.sort_values(by='timestamp').reset_index(drop=True)
     df.drop_duplicates(subset=['question'], inplace=True)
     df.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
 
