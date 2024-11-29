@@ -308,7 +308,7 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-""" Quick function to fix the structure of the dataset for next processing function """
+""" Function to make a dataset in conversation form (Q/A Pairs), used to make the dataset suitable for model training """
 def structure_dataset(df: pd.DataFrame) -> pd.DataFrame:
       """ 
       Checks the dataset for mistakes and corrects them for separate_sentences function. 
@@ -323,21 +323,22 @@ def structure_dataset(df: pd.DataFrame) -> pd.DataFrame:
       """
 
       dataframe: pd.DataFrame = df.copy()
-      last_sent: bool = False
-      previous_sender: str = "" 
-      total_sins: int = 0
+      last_sent: bool = False       # True if last row was sent by you; Used to avoid problem with identifying previous sender
+      previous_sender: str = ""     # Used to avoid problem with identifying previous sender
+      total_sins: int = 0           # Visualization; Keeps track of total problems that were fixed during structuring.
 
+      # Row fixer function
       def fix_row(df, idx, total_sins): 
-            # Drop the row and count total
             df.loc[idx, "Message"] = None 
             total_sins += 1
             return df, total_sins 
 
-      # Make the first row the first question (All questions become odds, answers->even)
+      # First row should be a question. Drop if sent_by_me is True
       if dataframe["Sent_by_me"].iloc[0]: 
             dataframe = dataframe.drop(dataframe.index[0]).reset_index(drop=True)
 
       start_time = time.time()
+      # Loops through dataframe, makes sure even rows are answers and odd rows are questions
       for idx, (sender, sent_by_me) in tqdm(enumerate(dataframe.loc[:, ["Sender", "Sent_by_me"]].values)):
             if sent_by_me:
                   # If there are two rows with same sender, concatenate the message into one message.
@@ -347,7 +348,7 @@ def structure_dataset(df: pd.DataFrame) -> pd.DataFrame:
                         # Delete concatanated row
                         dataframe, total_sins = fix_row(dataframe, idx-1, total_sins)
 
-                        
+            
             else:
                   # If there are two rows with same sender, concatenate the message into one message.
                   if sender == previous_sender:
