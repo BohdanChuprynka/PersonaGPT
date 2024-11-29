@@ -2,7 +2,7 @@ import json
 import os
 import numpy as np
 import pandas as pd
-from dotenv import load_dotenv
+import yaml
 
 def decode_utf8(encoded_str):
       # Decoding the string
@@ -119,9 +119,16 @@ if __name__ == "__main__":
             "threshold": threshold
       }
 
-      env_path = os.path.join(os.path.dirname(os.getcwd()), '.env')
-      load_dotenv(dotenv_path=env_path)
-      inbox_path = str(os.getenv('INBOX_PATH'))
-      instagram_username = os.getenv('INSTAGRAM_USERNAME')
+      config_path = os.path.join(os.path.dirname(os.getcwd()), "config.yaml")
+      with open(config_path, 'r') as f:
+            full_config = yaml.safe_load(f)
+
+      personal_parameters = full_config.get('personal_parameters', {})
+
+      instagram_username = personal_parameters.get('INSTAGRAM_USERNAME')
+      inbox_path =         personal_parameters.get('INBOX_PATH')
+
+      if not instagram_username: 
+            raise ValueError("Instagram username is not set in the .config file.")
 
       main(inbox_path=inbox_path, instagram_username=instagram_username, **kwargs)
