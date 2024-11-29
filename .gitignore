@@ -158,7 +158,6 @@ cython_debug/
 TODO.txt 
 .DS_Store
 parsers/discord/package
-parsers/instagram/your_instagram_activity
 parsers/telegram/parsers\full_telegram_data.csv
 parsers/instagram/instagram.csv
 parsers/discord/discord_data.csv
@@ -172,6 +171,10 @@ telegram_parser.session
 Models/*
 data_chunks/*
 LearningFolder
+parsers/telegram/older_tg_data.json
+parsers/instagram/old_your_instagram_activity
+parsers/instagram/your_instagram_activity
+parsers/instagram/your_instagram_activity 4
 
 [filter "jupyternotebook"]
       clean = "jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to notebook --stdout %f"
