@@ -175,6 +175,7 @@ parsers/telegram/older_tg_data.json
 parsers/instagram/old_your_instagram_activity
 parsers/instagram/your_instagram_activity
 parsers/instagram/your_instagram_activity 4
+args.json
 
 [filter "jupyternotebook"]
       clean = "jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to notebook --stdout %f"
