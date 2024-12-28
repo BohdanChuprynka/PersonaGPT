@@ -398,16 +398,17 @@ Creating a column with time difference between messages
 To correctly assign the context later in processing.
 """
 def create_time_diff_column(df: pd.DataFrame) -> pd.DataFrame:
-      # TODO: Create a method to assign time gaps correctly
-      
+    df['Date'] = pd.to_datetime(df['Date'], format='ISO8601')
 
-      df['Date'] = pd.to_datetime(df['Date'], format='ISO8601')
+    df = df.sort_values(by=["DialogID", 'Date']).reset_index(drop=True)
 
-      reference_time = df['Date'].min()
-      df['time_diff_seconds'] = df['Date'] - reference_time
-      # Converts into hours difference
-      df['time_diff_seconds'] = df['time_diff_seconds'].apply(lambda x: int(x.total_seconds()))
-      return df
+    # Create a column that records the timestamp of the first message in each group
+    df['time_diff_seconds'] = df.groupby('DialogID')['Date'].transform('min')
+
+    # Calculate the time difference in seconds relative to the first message in each group
+    df['time_diff_seconds'] = (df['Date'] - df['time_diff_seconds']).dt.total_seconds().astype(int)
+
+    return df
 
 
 def separate_sentences(df: pd.DataFrame) -> pd.DataFrame:
@@ -692,7 +693,8 @@ def augment_data(df: pd.DataFrame,
                 save_path: str = None,
                 augmentation_factor: int = 2, 
                 random_augmentation: bool = True, 
-                swap_memory: bool = True,
+                swap_memory: bool = False,
+                worker_id: int = None,
                 samples: int = None) -> pd.DataFrame:
 
     """
@@ -702,7 +704,7 @@ def augment_data(df: pd.DataFrame,
         df: pd.DataFrame with "question" column
         augmentation_factor: int = 5; how many times to augment each question.
         random_augmentation: bool = True; Every augmentation factor chooses random augmentation functions
-        swap_memory: bool = True; Swap memory between augmentations to reduce RAM usage.
+        swap_memory: bool = True; USE ONLY FOR PARALLEL PROCESSING. Swaps memory between augmentations to reduce RAM usage.",
         samples: int = None; How much rows to process. 
         
     """
@@ -712,32 +714,50 @@ def augment_data(df: pd.DataFrame,
     df_augmented = drop_space_rows(df_augmented, column="question")
     
     for i in tqdm(range(augmentation_factor)):
+        if worker_id:
+            print("------------------------") 
+            print(f"Worker #{worker_id}: {i+1} Iteration")
+            print("------------------------") 
+
         loop_dataset = original_dataframe.copy()
         loop_dataset["question"] = loop_dataset["question"].apply(lambda x: apply_augmentation(x, random_augmentation=random_augmentation))
     
+    for i in range(augmentation_factor):
+        if worker_id:
+            print("------------------------") 
+            print(f"Worker #{worker_id}: {i+1} Iteration")
+            print("------------------------") 
+
+        loop_dataset = original_dataframe.copy()
+        loop_dataset["question"] = loop_dataset["question"].apply(
+            lambda x: apply_augmentation(x, random_augmentation=random_augmentation)
+        )
+    
         if swap_memory and i >= 1:
             df_augmented = pd.read_csv(save_path)
-            
 
         df_augmented = pd.concat([df_augmented, loop_dataset], axis=0).reset_index(drop=True)
 
-        if not save_path:
-            save_path = "Datasets/dataset"
+        if save_path:
             df_augmented.to_csv(save_path, index=False)
             print(f"Saved into {save_path}")
-            continue
-            
-        # For the parallel augmentation
-        # Path would be chunks/chunk_1 , chunks/chunk_2 etc..
-        df_augmented.to_csv(save_path, index=False)
-        print(f"Saved into {save_path}")
 
         if swap_memory: 
             del df_augmented
-    
+
     # Sort the dataset for sequential data.
+    if swap_memory:
+        # Load the final dataset and concatenate using all chunks
+        df_augmented = connect_chunks(chunks_folder=CHUNKS_PATH)
+
+        
+    df_augmented.dropna(inplace=True)
     df_augmented.drop_duplicates(inplace=True)
-    print("Augmentation completed.")
+    df_augmented.reset_index(drop=True, inplace=True)
+
+    print("Augmentation completed.") 
+    return df_augmented
+
 
 
 # Parallel processing
@@ -749,7 +769,7 @@ def augmentation_wrapper(df: pd.DataFrame, save_path: str, worker_id: int = None
       if worker_id: 
          time.sleep(worker_id * INIT_TIME) 
          
-      return augment_data(df, save_path, **kwargs)
+      return augment_data(df, save_path, worker_id=worker_id, **kwargs)
 
 def parallel_computing(df, func, num_partitions=NUM_WORKERS, num_chunks: int = NUM_WORKERS, sequential_initialization=True, **kwargs):
     df_split = np.array_split(df, num_chunks) 
@@ -761,7 +781,7 @@ def parallel_computing(df, func, num_partitions=NUM_WORKERS, num_chunks: int = N
     pool = None
     try:
       # Apply the function to each partition in parallel
-      pool = mp.Pool(processes=num_partitions, maxtasksperchild=4) 
+      pool = mp.Pool(processes=num_partitions, maxtasksperchild=6) 
 
       if sequential_initialization:
         pool.starmap(func_with_kwargs, [(df_split[i], save_paths[i], i) for i in range(num_chunks)])
@@ -826,14 +846,19 @@ def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9)
     df = add_context(df)
 
     parallel_computing(df, augmentation_wrapper, num_chunks=NUM_CHUNKS, sequential_initialization=True, **PROCESSING_KWARGS)
+    df.sort_values(by=['DialogID', 'time_diff_seconds'], inplace=True)
 
     # Finally.. save our final results
     df = connect_chunks(chunks_folder=CHUNKS_PATH)
+    df.sort_values(by=['DialogID', 'time_diff_seconds'], inplace=True)
 
     df.drop_duplicates(subset=['question'], inplace=True)
     df.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
-
-    df.to_csv(OUTPUT_DIR, index=False)
+    
+    if os.path.exists(OUTPUT_DIR):
+        input = input("File with the same name already exists. Do you want to overwrite it? (y/n)\n")
+        if input == "y":
+            df.to_csv(OUTPUT_DIR, index=False)
 
     return df
     
