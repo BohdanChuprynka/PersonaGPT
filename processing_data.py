@@ -304,6 +304,32 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
+def delete_groupchats(df: pd.DataFrame, verbose: bool = False) -> pd.DataFrame:
+      """ Deletes DialogID group which have more than 2 participants """
+
+      # Get list of participants for each DialogID 
+      dialog_participants = df.groupby('DialogID')['Sender'].unique().reset_index()
+      
+      # Check whether "Meta AI" is in the list of participants
+      dialog_participants["Sender"] = [len(participants)-1 if 'Meta ID' in participants else len(participants) for participants in dialog_participants["Sender"]]
+
+      groups_to_delete = dialog_participants[dialog_participants["Sender"] > 2]
+
+      # Choose only DialogID which have more than 2 participants      
+      filtered_df = df[~df['DialogID'].isin(groups_to_delete['DialogID'])]
+
+      # Additionally, drop 
+      filtered_df = filtered_df[filtered_df["Sender"] != "Meta AI"].reset_index(drop=True)
+
+      if verbose:
+            # Count messages deleted
+            deleted_messages = len(df) - len(filtered_df)
+
+            print(f"Groups to delete/Amount of participants:\n {groups_to_delete.reset_index(drop=True)}")
+            print(f"Messages deleted: {deleted_messages}")
+                  
+      return filtered_df
+
 """ Function to make a dataset in conversation form (Q/A Pairs), used to make the dataset suitable for model training """
 def structure_dataset(df: pd.DataFrame) -> pd.DataFrame:
       """ 
@@ -477,7 +503,7 @@ def add_context(df: pd.DataFrame, context_size: int = CONTEXT_SIZE) -> pd.DataFr
             # Build the context string from previous rows
             message = []
             for key, (question, answer) in enumerate(zip(context["question"], context["answer"])):
-                message.append(f"Q{key + 1}: {question}. A{key + 1}: {answer} || ")
+                message.append(f" | Q{key + 1}: {question}. A{key + 1}: {answer} |")
 
             # Append the concatenated message as the context
             context_list.append(" ".join(message))
@@ -494,6 +520,7 @@ def add_context(df: pd.DataFrame, context_size: int = CONTEXT_SIZE) -> pd.DataFr
     df["context"] = df["context"].apply(lambda x: "Time Gap" if pd.isna(x) else x)
     
     return df
+
 
 """  Augmentation functions !  """         
 def remove_double_commas(text: str) -> str:
@@ -840,24 +867,25 @@ def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9)
     df = pd.DataFrame(df)
     df = preprocess_dataset(df)
     df = create_time_diff_column(df)
+    df = delete_groupchats(df)
     df = structure_dataset(df)
     check_structure(df)
     df = separate_sentences(df)
     df = add_context(df)
 
-    parallel_computing(df, augmentation_wrapper, num_chunks=NUM_CHUNKS, sequential_initialization=True, **PROCESSING_KWARGS)
-    df.sort_values(by=['DialogID', 'time_diff_seconds'], inplace=True)
-
+    # CLOSED FOR THE REASON OF REPETITION IN ANSWERS OF MODEL.
+    # parallel_computing(df, augmentation_wrapper, num_chunks=NUM_CHUNKS, sequential_initialization=True, **PROCESSING_KWARGS)
+    # df.sort_values(by=['DialogID', 'time_diff_seconds'], inplace=True)
     # Finally.. save our final results
-    df = connect_chunks(chunks_folder=CHUNKS_PATH)
+    # df = connect_chunks(chunks_folder=CHUNKS_PATH)
     df.sort_values(by=['DialogID', 'time_diff_seconds'], inplace=True)
 
     df.drop_duplicates(subset=['question'], inplace=True)
     df.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
     
     if os.path.exists(OUTPUT_DIR):
-        input = input("File with the same name already exists. Do you want to overwrite it? (y/n)\n")
-        if input == "y":
+        response = input("File with the same name already exists. Do you want to overwrite it? (y/n)\n")
+        if response == "y":
             df.to_csv(OUTPUT_DIR, index=False)
 
     return df
