@@ -35,8 +35,7 @@ def extract_dialog(json_file_path, message_limit: int = None, dialogs_limit: int
                               if last_message[0][-1] not in [".", "!", "?"]:
                                     last_message[0] = last_message[0] + ","
                               
-                              message = message[0].lower() + message[1:]
-                              last_message[0] = " ".join([last_message[0], message])
+                              last_message[0] = " ".join([message.lower(), last_message[0]])
                         else:
                               if last_message:
                                     extracted_dialog.append(last_message)
@@ -103,15 +102,16 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
 
 if __name__ == "__main__":
       # Parameters
+      root_path = os.getcwd()
       message_limit: int = None                             # The maximum amount of messages to be processed total
       dialogs_limit: int = None                             # The maximum amount of dialogs to be processed
       verbose=1                                             # The amount of output to be printed
       checkpoints: bool = True                              # To save data during parsing
       threshold: int = 50                                   # Drop the dialog if it has less or equal messages than the threshold
-      save_csv: bool = True         
+      save_dir = os.getcwd(z)
 
       kwargs = {
-            "save_csv": save_csv,
+            "save_path": save_dir,
             "message_limit": message_limit,
             "dialogs_limit": dialogs_limit,
             "verbose": verbose,
@@ -119,7 +119,7 @@ if __name__ == "__main__":
             "threshold": threshold
       }
 
-      config_path = os.path.join(os.path.dirname(os.getcwd()), "config.yaml")
+      config_path = os.path.join(os.getcwd(), "config.yaml")
       with open(config_path, 'r') as f:
             full_config = yaml.safe_load(f)
 

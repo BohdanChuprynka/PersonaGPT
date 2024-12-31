@@ -20,7 +20,6 @@ personal_parameters = full_config.get('personal_parameters', {})
 api_id =                personal_parameters.get('TELEGRAM_API_ID')
 api_hash =              personal_parameters.get('TELEGRAM_HASH_ID')
 phone_number =          personal_parameters.get('PHONE_NUMBER')
-my_telegram_id =        personal_parameters.get('TELEGRAM_ID')
 session_name =          str(personal_parameters.get('SESSION_NAME'))
 client = TelegramClient(session_name, api_id, api_hash)
 
@@ -46,8 +45,7 @@ async def global_extract_dialog_info(client, messages):
                         if last_message[0][-1] not in [".", "!", "?"]:
                             last_message[0] = last_message[0] + ","
                         
-                        text = text[0].lower() + text[1:]
-                        last_message[0] = " ".join([last_message[0], text])
+                        last_message[0] = " ".join([text, last_message[0]])
                   else:
                         if last_message:
                               extracted_dialog.append(last_message)
@@ -80,7 +78,7 @@ def local_extract_dialog_info(messages):
                             last_message[0] = last_message[0] + ","
                         
                         text = text[0].lower() + text[1:]
-                        last_message[0] = " ".join([last_message[0], text])
+                        last_message[0] = " ".join([text, last_message[0]])
                   else:
                         if last_message:
                               extracted_dialog.append(last_message)
@@ -211,7 +209,7 @@ def local_parse(
       return filtered_dialogs
             
     
-async def main(parse_type: str, json_path = None,**kwargs):
+async def main(parse_type: str, json_path = None, my_telegram_id = None, **kwargs):
     save_path = kwargs.get("save_path")
     del kwargs["save_path"]
 
@@ -237,8 +235,7 @@ async def main(parse_type: str, json_path = None,**kwargs):
         raise ValueError("Invalid parse_type. Use 'local' or 'global'.")
 
     # All other code 
-    my_telegram_id = os.getenv('TELEGRAM_ID')
-    data["Sent_by_me"] = data["Sender"] == my_telegram_id
+    data["Sent_by_me"] = data["Sender"] == str(my_telegram_id)
 
     if save_path:
         save_path = os.path.join(save_path , 'telegram_data.csv')
