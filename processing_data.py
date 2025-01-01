@@ -460,6 +460,7 @@ def separate_sentences(df: pd.DataFrame) -> pd.DataFrame:
      [
         questions_df["Message"][:min_length].rename("question"),
         answers_df["Message"][:min_length].rename("answer"),
+        df["DialogID"][:min_length],
         df["Date"][:min_length].rename("timestamp"),
         df["Sent_by_me"][:min_length].rename("Sent_by_me"),
         df["time_diff_seconds"][:min_length].rename("time_diff_seconds")
@@ -516,13 +517,16 @@ def add_context(df: pd.DataFrame, context_size: int = CONTEXT_SIZE) -> pd.DataFr
     # Add the context as a new column
     df["context"] = context_list
 
-    # Replace any empty or missing contexts with "Missing Context" if desired
+    # Replace any empty or missing contexts with "Time Gap" if desired
     df["context"] = df["context"].apply(lambda x: "Time Gap" if pd.isna(x) else x)
     
     return df
 
 
-"""  Augmentation functions !  """         
+"""  
+                    Augmentation functions !  
+
+"""         
 def remove_double_commas(text: str) -> str:
     """Removes double commas from the text."""
     return text.replace(",,", ",")
@@ -689,8 +693,6 @@ def is_memory(threshold_gb: float = MEMORY_THRESHOLD, delay: int = DELAY):
         print("Memory limit reached. Waiting for resources to free up...")
         time.sleep(delay)
 
-translator = google_translate(translate_from=DATASET_LANGUAGE, translate_to=BACK_TRANSLATION_LANGUAGE, replace_synonyms=BOOL_SYNONYM)
-augmentation_functions = [translator.back_translate, shuffle_sentence, pop_word, swap_word]
 def select_random_functions(functions=augmentation_functions, p=PROBS):  # Added probs in order to lower probabilities for back-translation because of low-resources
     """ Returns random functions in order to apply during processing"""
 
@@ -873,6 +875,8 @@ def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9)
     df = separate_sentences(df)
     df = add_context(df)
 
+    # translator = google_translate(translate_from=DATASET_LANGUAGE, translate_to=BACK_TRANSLATION_LANGUAGE, replace_synonyms=BOOL_SYNONYM)
+    # augmentation_functions = [translator.back_translate, shuffle_sentence, pop_word, swap_word]
     # CLOSED FOR THE REASON OF REPETITION IN ANSWERS OF MODEL.
     # parallel_computing(df, augmentation_wrapper, num_chunks=NUM_CHUNKS, sequential_initialization=True, **PROCESSING_KWARGS)
     # df.sort_values(by=['DialogID', 'time_diff_seconds'], inplace=True)
