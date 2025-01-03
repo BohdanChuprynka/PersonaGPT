@@ -681,6 +681,7 @@ class google_translate:
                 print(f"synonym_replacement Exception: Could not replace synonym: {str(e)}")
                 return sentence        
 
+
 def is_memory(threshold_gb: float = MEMORY_THRESHOLD, delay: int = DELAY): 
     """
     Pauses execution when available memory is less than threshold.
@@ -692,6 +693,9 @@ def is_memory(threshold_gb: float = MEMORY_THRESHOLD, delay: int = DELAY):
     if available_ram <= threshold_gb:
         print("Memory limit reached. Waiting for resources to free up...")
         time.sleep(delay)
+
+translator = google_translate(translate_from=DATASET_LANGUAGE, translate_to=BACK_TRANSLATION_LANGUAGE, replace_synonyms=BOOL_SYNONYM)
+augmentation_functions = [translator.back_translate, shuffle_sentence, pop_word, swap_word]
 
 def select_random_functions(functions=augmentation_functions, p=PROBS):  # Added probs in order to lower probabilities for back-translation because of low-resources
     """ Returns random functions in order to apply during processing"""
@@ -841,25 +845,30 @@ def jailbreak_protection(questions: list, answers, df: pd.DataFrame) -> pd.DataF
       """
       Creates a dataframe with jailbreak q/a to match original df. 
       """
-
+      dataset = df.copy()
       min_length = min(len(questions), len(answers))
+      
       questions = questions[:min_length]
       answers = answers[:min_length]
-
-      random_timestamps = df["timestamp"].sample(n=min_length).reset_index(drop=True)
+      jailbreaks = pd.Series(["Jailbreak"] * min_length)
+      random_timestamps = dataset["timestamp"].sample(n=min_length).reset_index(drop=True)
       time_gaps = pd.Series(['Time Gap'] * min_length)
+      
 
       jailbreak_df = pd.DataFrame({
+            'DialogID': jailbreaks,
             'question': questions[:min_length],
             'answer': answers[:min_length],
             'timestamp': random_timestamps,
             'context': time_gaps
       })
 
-      return jailbreak_df
+      # TODO: Think of an efficient way for jailbreak to be added to the original df.
+
+      return dataset
 
 
-def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9) -> pd.DataFrame:
+def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9, add_jailbreak: bool = False) -> pd.DataFrame:
     if not [df, df_path]:
         raise Exception("No input data provided.")
 
@@ -875,8 +884,6 @@ def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9)
     df = separate_sentences(df)
     df = add_context(df)
 
-    # translator = google_translate(translate_from=DATASET_LANGUAGE, translate_to=BACK_TRANSLATION_LANGUAGE, replace_synonyms=BOOL_SYNONYM)
-    # augmentation_functions = [translator.back_translate, shuffle_sentence, pop_word, swap_word]
     # CLOSED FOR THE REASON OF REPETITION IN ANSWERS OF MODEL.
     # parallel_computing(df, augmentation_wrapper, num_chunks=NUM_CHUNKS, sequential_initialization=True, **PROCESSING_KWARGS)
     # df.sort_values(by=['DialogID', 'time_diff_seconds'], inplace=True)
