@@ -11,7 +11,9 @@ import sys
 import re
 import yaml
 
-config_path = os.path.join(os.getcwd(), "config.yaml")
+from helper_functions import find_repository_folder, find_files
+
+config_path = os.path.join(find_repository_folder(), "config.yaml")
 with open(config_path, 'r') as f:
     full_config = yaml.safe_load(f)
 
@@ -21,7 +23,6 @@ api_id =                personal_parameters.get('TELEGRAM_API_ID')
 api_hash =              personal_parameters.get('TELEGRAM_HASH_ID')
 phone_number =          personal_parameters.get('PHONE_NUMBER')
 session_name =          str(personal_parameters.get('SESSION_NAME'))
-client = TelegramClient(session_name, api_id, api_hash)
 
 async def global_extract_dialog_info(client, messages):
       extracted_dialog = []
@@ -207,12 +208,21 @@ def local_parse(
                     break
 
       return filtered_dialogs
-            
     
-async def main(parse_type: str, json_path = None, my_telegram_id = None, **kwargs):
+async def main(parse_type: str, my_telegram_id = None, **kwargs):
     save_path = kwargs.get("save_path")
     del kwargs["save_path"]
+    
+    # Find our instagram dataset folder
+    base_dir = find_repository_folder()
+    json_path = find_files(base_dir, pattern="result\.json$")
 
+    # Raise exception if no files found
+    if len(json_path) == 0:
+         raise ValueError("JSON file was not found. Please check the path and try again.") 
+    json_path = json_path[0]
+
+    # Parse types, local: from local file, global: through telegram api
     if parse_type == "local":
         if os.path.exists(json_path):
             data = local_parse(json_path=json_path, **kwargs)
@@ -234,8 +244,7 @@ async def main(parse_type: str, json_path = None, my_telegram_id = None, **kwarg
     else: 
         raise ValueError("Invalid parse_type. Use 'local' or 'global'.")
 
-    # All other code 
-    data["Sent_by_me"] = data["Sender"] == str(my_telegram_id)
+    data["Sent_by_me"] = data["Sender"] == str(my_telegram_id) # Sent_by_me colummn for further processing
 
     if save_path:
         save_path = os.path.join(save_path , 'telegram_data.csv')
@@ -251,14 +260,18 @@ async def main(parse_type: str, json_path = None, my_telegram_id = None, **kwarg
     return data
 
 if __name__ == "__main__":
-    message_limit: int = None                             # The maximum amount of messages to be processed total
-    dialogs_limit: int = None                            # The maximum amount of dialogs to be processed
-    verbose=1                                             # The amount of output to be printed
-    checkpoints: bool = True                              # To save data during parsing
-    save_path = os.path.join(os.getcwd(), "Datasets")
-    threshold: int = 50      
-    json_path = os.getenv('JSON_PATH')
-    print(f"JSON Path: {json_path}")
+    root_folder = find_repository_folder()
+    config_path = os.path.join(root_folder, "config.yaml")
+    with open(config_path, 'r') as f:
+        full_config = yaml.safe_load(f)
+    loading_parameters = full_config.get('loading_parameters', {})
+
+    message_limit: int = loading_parameters.get('MESSAGE_LIMIT')
+    dialogs_limit: int = loading_parameters.get('DIALOGS_LIMIT')
+    verbose= loading_parameters.get('VERBOSE')                                           
+    checkpoints: bool = loading_parameters.get('CHECKPOINTS')                   
+    save_path = os.path.join(root_folder, loading_parameters.get('save_path'))
+    threshold: int = loading_parameters.get('THRESHOLD')  
 
     kwargs = {
         "save_path": save_path,
@@ -269,4 +282,4 @@ if __name__ == "__main__":
         "threshold": threshold
     }
 
-    data = asyncio.run(main(parse_type="local", json_path=json_path, **kwargs))
+    data = asyncio.run(main(parse_type="local", **kwargs))

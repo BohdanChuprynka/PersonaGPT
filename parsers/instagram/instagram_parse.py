@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from helper_functions import find_repository_folder, find_dirs
+
 def decode_utf8(encoded_str):
       # Decoding the string
       try: 
@@ -44,7 +46,7 @@ def extract_dialog(json_file_path, message_limit: int = None, dialogs_limit: int
             return extracted_dialog
 
 
-def main(inbox_path: str, instagram_username: str, **kwargs):
+def main(instagram_username: str, **kwargs):
       verbose = kwargs.get("verbose")
       save_path = kwargs.get("save_path")
       message_limit = kwargs.get("message_limit")
@@ -52,8 +54,14 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
       threshold = kwargs.get("threshold")
       del kwargs["save_path"]
 
-      if not os.path.exists(inbox_path):
-                  raise Exception(f"Directory '{inbox_path}' for instagram folder wasn't found.\n Try to change the path to your_instagram_activity -> messages -> inbox.")
+
+      base_dir = find_repository_folder()
+      inbox_path = find_dirs(base_dir, pattern="inbox$")
+
+      # Raise exception if no files found
+      if len(inbox_path) == 0:
+            raise ValueError("Instagram: Inbox folder was not found. Please check the path and try again.") 
+      inbox_path = inbox_path[0]
 
 
       df = pd.DataFrame(columns=["DialogID", 'Message', 'Sender', 'Date'])   
@@ -101,8 +109,8 @@ def main(inbox_path: str, instagram_username: str, **kwargs):
 
 
 if __name__ == "__main__":
-      # Parameters
-      root_path = os.getcwd()
+      # Parameters      
+      root_path = find_repository_folder()
       message_limit: int = None                             # The maximum amount of messages to be processed total
       dialogs_limit: int = None                             # The maximum amount of dialogs to be processed
       verbose=1                                             # The amount of output to be printed
@@ -126,9 +134,8 @@ if __name__ == "__main__":
       personal_parameters = full_config.get('personal_parameters', {})
 
       instagram_username = personal_parameters.get('INSTAGRAM_USERNAME')
-      inbox_path =         personal_parameters.get('INBOX_PATH')
 
       if not instagram_username: 
             raise ValueError("Instagram username is not set in the .config file.")
 
-      main(inbox_path=inbox_path, instagram_username=instagram_username, **kwargs)
+      main(instagram_username=instagram_username, **kwargs)
