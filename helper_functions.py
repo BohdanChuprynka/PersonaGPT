@@ -1,9 +1,10 @@
 import os
 import re
+import pandas as pd
 
 def find_repository_folder(start_path: str = None) -> str:
     """
-    Locate the root folder of the repository by traversing upwards 
+    Locates the root folder of the repository by traversing upwards 
     until a marker file or folder is found.
 
     :param start_path: The starting directory for the search. 
@@ -74,3 +75,44 @@ def find_dirs(base_dir, pattern: str = None) -> list:
 
     return found_dirs
 
+def save_dataset(content: pd.DataFrame, path: str):
+    """
+    Provides a convenient attention to saving a dataset into the specified path
+
+    Parameters:
+    - content (str): The content to be saved.
+    - path (str): The path to save the content.
+
+    Returns:
+    - None
+    """
+
+    if not os.path.exists(path):
+        print(f"Saving to {path}")
+        content.to_csv(path, index=False)
+    else: 
+        exc = f"Dataset already exists at {path}"
+        while True:
+                response = input(f"{exc}. Type 'overwrite' to overwrite the file, 'q' to quit, or enter a new name of the file: ")
+                if response.lower() == 'overwrite':
+                    print(f"Overwriting {path}")
+                    content.to_csv(path, index=False)
+                    break
+                elif response.lower() == 'q':
+                    break
+                elif response.lower() == '':
+                    exc = "Provided input is invalid"
+                else:
+                    if not response.endswith('.csv'): # Make sure that saved file is .csv
+                            response += '.csv'
+
+                    # Go down the directory to get the directory where the dataset should be saved
+                    dir_path = os.path.dirname(path)
+                    save_path = os.path.join(dir_path, str(response))
+                    if os.path.exists(save_path):
+                            exc = f"File already exists at {save_path}" # In case if file on new path already exists
+                            continue
+                    else:
+                            print(f"Saving to {save_path}")
+                            content.to_csv(save_path, index=False)
+                            break

@@ -25,12 +25,13 @@ import yaml
 # Global Variables
 import multiprocess as mp              # NOT multiprocessing to avoid __main__ improtable problem by the children 
 import requests
-
+from helper_functions import find_repository_folder, save_dataset
 
 
 # All variables configuration from config.yaml file 
 # <---------------------------------- VARIABLE INITIALIZATION --------------------------------------->
-config_path = os.path.join(os.getcwd(), "config.yaml")
+root_path = find_repository_folder
+config_path = os.path.join(root_path, "config.yaml")
 with open(config_path, 'r') as f:
     full_config = yaml.safe_load(f)
 
@@ -38,8 +39,6 @@ processing_parameters = full_config.get('processing_parameters', {})
 processing_params = full_config.get('processing_kwargs', {})
 personal_parameters = full_config.get('personal_parameters', {})
 
-
-root_path = os.getcwd()
 DATASET_PATH                  = os.path.join(root_path, processing_parameters.get("dataset_path"))
 OUTPUT_DIR                    = os.path.join(root_path, processing_parameters.get("save_path"))
 GLOVE_PATH                    = os.path.join(root_path, processing_parameters.get("glove_path"))
@@ -504,7 +503,7 @@ def add_context(df: pd.DataFrame, context_size: int = CONTEXT_SIZE) -> pd.DataFr
             # Build the context string from previous rows
             message = []
             for key, (question, answer) in enumerate(zip(context["question"], context["answer"])):
-                message.append(f" | Q{key + 1}: {question}. A{key + 1}: {answer} |")
+                message.append(f" <Q{key + 1}> {question} <A{key + 1}> {answer}")
 
             # Append the concatenated message as the context
             context_list.append(" ".join(message))
@@ -894,10 +893,7 @@ def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9,
     df.drop_duplicates(subset=['question'], inplace=True)
     df.drop(["Sent_by_me", "time_diff_seconds"], axis=1, inplace=True)
     
-    if os.path.exists(OUTPUT_DIR):
-        response = input("File with the same name already exists. Do you want to overwrite it? (y/n)\n")
-        if response == "y":
-            df.to_csv(OUTPUT_DIR, index=False)
+    save_dataset(df, DATASET_PATH)
 
     return df
     
