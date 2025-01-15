@@ -30,7 +30,7 @@ from helper_functions import find_repository_folder, save_dataset
 
 # All variables configuration from config.yaml file 
 # <---------------------------------- VARIABLE INITIALIZATION --------------------------------------->
-root_path = find_repository_folder
+root_path = find_repository_folder()
 config_path = os.path.join(root_path, "config.yaml")
 with open(config_path, 'r') as f:
     full_config = yaml.safe_load(f)

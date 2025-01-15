@@ -1,6 +1,17 @@
 import os
 import re
 import pandas as pd
+import subprocess
+import sys
+
+def install_requirements():
+    try:
+        requirements_path = find_files(base_dir=".", pattern="requirements.txt")[0]
+        print(requirements_path)
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", requirements_path])
+        print("All libraries from requirements.txt have been installed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to install libraries: {e}")
 
 def find_repository_folder(start_path: str = None) -> str:
     """
@@ -63,6 +74,10 @@ def find_dirs(base_dir, pattern: str = None) -> list:
     Returns:
     - list: A list of directory paths that match the specified pattern. 
     """
+    if not base_dir() or not os.path.exists(base_dir):
+        # Go from repository root_dir
+        base_dir = find_repository_folder()
+
     if pattern is None:
         pattern = r'.*'  # Default: Match all directories
 
