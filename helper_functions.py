@@ -50,6 +50,10 @@ def find_files(base_dir, pattern: str = None) -> list:
 
     Returns:
     - list: A list of file paths that match the specified pattern.
+
+    Example:
+    >>> find_files(base_dir="/path/to/directory", pattern="*.txt")
+    ['/path/to/directory/file1.txt', '/path/to/directory/file2.txt']
     """
     if pattern is None:
         pattern = r'.*'  # Default: Match all files

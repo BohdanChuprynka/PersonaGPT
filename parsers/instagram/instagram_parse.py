@@ -116,7 +116,7 @@ if __name__ == "__main__":
       verbose=1                                             # The amount of output to be printed
       checkpoints: bool = True                              # To save data during parsing
       threshold: int = 50                                   # Drop the dialog if it has less or equal messages than the threshold
-      save_dir = os.getcwd(z)
+      save_dir = os.path.join(root_path, "Datasets/Instagram")
 
       kwargs = {
             "save_path": save_dir,
