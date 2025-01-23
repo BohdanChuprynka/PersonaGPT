@@ -883,7 +883,7 @@ def main(df: pd.DataFrame = None , df_path: str = None, train_size: float = 0.9,
     df = separate_sentences(df)
     df = add_context(df)
 
-    # CLOSED FOR THE REASON OF REPETITION IN ANSWERS OF MODEL.
+    # CLOSED FOR SOME TIME UNTIL THE FULL MODEL IS DONE
     # parallel_computing(df, augmentation_wrapper, num_chunks=NUM_CHUNKS, sequential_initialization=True, **PROCESSING_KWARGS)
     # df.sort_values(by=['DialogID', 'time_diff_seconds'], inplace=True)
     # Finally.. save our final results
