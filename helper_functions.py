@@ -135,3 +135,42 @@ def save_dataset(content: pd.DataFrame, path: str):
                             print(f"Saving to {save_path}")
                             content.to_csv(save_path, index=False)
                             break
+
+def change_prompts(language: str = "en", df: pd.DataFrame = None):
+    """
+    Changes the prompts in context for model requirements based on the language of the dataset.
+    language: str: The native language of the dataset, will return the prompts on the specified language. USE language codes!
+    df: pd.DataFrame: If specified, will change the column "context" in the dataframe to the specified language.
+    """
+    if language.lower() == "uk":  # type: ignore
+        q_prompt = "Питання"
+        c_prompt = "Контекст"
+        finetune_prompt = "Підказка"
+        context_label = "Відсутній контекст"
+    elif language.lower() == "en":
+        q_prompt = "Question"
+        finetune_prompt = "Prompt"
+        c_prompt = "Context"
+
+    if df is not None:
+        if not df.empty:
+            df["context"] = [context_label if x == "Time Gap" else x for x in df["context"]]
+            return df, q_prompt, finetune_prompt, c_prompt
+
+    return q_prompt, finetune_prompt, c_prompt, context_label
+
+def normalize_text(s):
+    """Lower text and remove punctuation, articles and extra whitespace."""
+    def remove_repeated_chars(text):
+        return re.sub(r"\s+", " ", text)
+
+    def white_space_fix(text):
+        return ' '.join(text.split())
+
+    def strip(text):
+        return text.strip()
+    
+    def lower(text):
+        return text.lower()
+
+    return remove_repeated_chars(white_space_fix(strip(lower(s))))
