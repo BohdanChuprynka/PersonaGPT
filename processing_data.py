@@ -511,7 +511,7 @@ def add_context(df: pd.DataFrame, context_size: int = CONTEXT_SIZE) -> pd.DataFr
     # Handle 1st row None (diff seconds in 0 index is 0, then 1 is None).
     context = df.loc[0, ["question", "answer"]]
     question, answer = context["question"], context["answer"]
-    context_list[1] = (f"Q{1}: {question}. A{1}: {answer} || ")
+    context_list[1] = f" <Q{key + 1}> {question} <A{key + 1}> {answer}"
     
     # Add the context as a new column
     df["context"] = context_list
