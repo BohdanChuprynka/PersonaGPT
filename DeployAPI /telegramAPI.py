@@ -1,17 +1,17 @@
+import sys
+import os
+# Get the parent directory of the current script
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(parent_dir)
+
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 import yaml
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 import torch
-import sys
-import os
 
 from typing import List
-
-# Get the parent directory of the current script
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(parent_dir)
 
 from helper_functions import change_prompts, normalize_text
 
@@ -21,7 +21,7 @@ with open('config.yaml') as file:
 
 TARGET_MAX_LENGTH = config['training_parameters']['TARGET_MAX_LENGTH']
 OUTPUT_DIR = config['training_parameters']['OUTPUT_DIR']
-MODEL_NAME = config['personal_parameters']['MODEL_NAME']
+MODEL_NAME = config['training_parameters']['MODEL_NAME']
 TOKEN = config['personal_parameters']['TELEGRAM_API']
 q_prompt, finetune_prompt, c_prompt, context_label = change_prompts(language="uk", df=None)
 
@@ -45,8 +45,9 @@ def generate_response(prompt):
 
 def build_input_output(chat_info: List) -> str:
     # TODO: Maybe implement a way to follow the time difference between messages
+    print(chat_info)
 
-    if chat_info["last_message"]:
+    if chat_info[-1]["model_answer"]:
         for key, (question, answer) in enumerate(zip(chat_info[:][0], chat_info[:][0])):
             context += f" <Q{key + 1}> {question} <A{key + 1}> {answer}"
 
@@ -61,8 +62,6 @@ def build_input_output(chat_info: List) -> str:
 
 
 async def start_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Hello! Please wait while I load the model. This may take a few seconds.")
-    
     await update.message.reply_text("Hello! I am a personal GPT chatbot. I am trained to accurately replicate the conversation style of the person I was trained on. Send me a message, and let's chat!")
 
 

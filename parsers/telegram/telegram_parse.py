@@ -1,3 +1,10 @@
+import os
+import sys
+# Get the parent directory of the current script
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+print(f"Parent diiir: {parent_dir}")
+sys.path.append(parent_dir)
+
 from telethon import TelegramClient
 from telethon.tl.functions.messages import GetHistoryRequest
 from telethon.tl.types import User, PeerUser
@@ -6,8 +13,7 @@ import pandas as pd
 import asyncio
 import time 
 import json
-import os
-import sys
+
 import re
 import yaml
 
