@@ -78,7 +78,7 @@ def find_dirs(base_dir, pattern: str = None) -> list:
     Returns:
     - list: A list of directory paths that match the specified pattern. 
     """
-    if not base_dir() or not os.path.exists(base_dir):
+    if not base_dir or not os.path.exists(base_dir):
         # Go from repository root_dir
         base_dir = find_repository_folder()
 

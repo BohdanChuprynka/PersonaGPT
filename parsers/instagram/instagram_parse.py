@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from helper_functions import find_repository_folder, find_dirs
+from main.helper_functions import find_repository_folder, find_dirs
 
 def decode_utf8(encoded_str):
       # Decoding the string
