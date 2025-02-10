@@ -100,8 +100,8 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text("An error occurred. Please try again later.")
     else:
         print("Error occurred but update or update.message is None. Terminating active session.")
-
-    # Terminate the active session to avoid having multiple active sessions on the Telegram API.
+ 
+    # Terminate the active session to avoid having multiple active sessions on the Telegram API
     await context.application.stop()
 
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
