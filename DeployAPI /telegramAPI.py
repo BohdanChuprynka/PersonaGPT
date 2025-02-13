@@ -86,7 +86,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     chat_info.append([normalized_message, model_answer, message_time, user_id, username, first_name, last_name, chat_id, message_id, is_bot, language_code])
     #  ----------------------------------------  AI Logic ends here ----------------------------------------  #
-    # TODO: If chat_info is longer than 10, append it do dataset
+    # TODO: If chat_info is longer than 10, append it do datasetz
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # TODO: Maybe implement a way to handle photos? 
