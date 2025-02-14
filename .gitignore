@@ -180,11 +180,6 @@ FilesToRun/*
 
 [filter "jupyternotebook"]
       clean = "jupyter nbconvert --ClearOutputPreprocessor.enabled=True --to notebook --stdout %f"
-echo "*.session" >> .gitignore
-echo "*.session-journal" >> .gitignore
-git rm --cached -r .
-git add .gitignore
-git commit -m "Ignore Telethon session files"
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
